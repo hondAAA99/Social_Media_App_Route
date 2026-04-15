@@ -1,30 +1,21 @@
 import express from "express";
-import { PORT } from "./config/config.services.js";
+import { PORT, HOST } from "./config/config.services.js";
 import helmet from "helmet";
 import cors from "cors";
-import { rateLimit } from "express-rate-limit";
-import { ErrorResponse, globalErrorHandling } from "./common/globalresponse.js";
+import { globalErrorHandling, ErrorNotFound } from "./common/globalresponse.js";
+import limiter from "./common/middleware/limiter.js";
+import { checkDataBaseConnection } from "./DB/DB.connection.js";
+import { authRouter } from "./model/auth/auth.controller.js";
 const app = express();
 const port = Number(PORT);
-const limiter = rateLimit({
-    windowMs: 1000 * 60 * 60,
-    limit: 4,
-    handler: (req, res, next, options) => {
-        throw new ErrorResponse({
-            message: "too many requests",
-            statusCode: 404,
-        });
-    },
-    legacyHeaders: false,
-});
+const host = HOST;
 const bootstrap = async () => {
     app.use(express.json());
     app.use(helmet(), cors(), limiter);
+    checkDataBaseConnection();
+    app.use('/auth', authRouter);
     app.all("{/*demo}", (req, res, next) => {
-        throw new ErrorResponse({
-            message: `the request on ${req.url} with method ${req.method} has wrong path`,
-            statusCode: 404,
-        });
+        ErrorNotFound(`the request on ${req.url} with method ${req.method} has wrong path`);
     });
     app.use(globalErrorHandling);
     app.listen(port, () => {
