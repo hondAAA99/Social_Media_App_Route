@@ -3,7 +3,7 @@ export const signUpSchema = {
     body: zod
         .object({
         userName: zod.string(),
-        email: zod.string(),
+        email: zod.email(),
         password: zod.string(),
         cpassword: zod.string(),
         phone: zod.string().optional(),
@@ -22,7 +22,13 @@ export const signUpSchema = {
 };
 export const signInSchema = {
     body: zod.object({
-        email: zod.string(),
+        email: zod.email(),
         password: zod.string(),
+    }),
+};
+export const confirmSignUpSchema = {
+    body: zod.object({
+        email: zod.email(),
+        otp: zod.string().length(5),
     }),
 };

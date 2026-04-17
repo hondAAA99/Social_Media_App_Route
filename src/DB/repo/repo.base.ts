@@ -1,4 +1,9 @@
-import { QueryOptions } from "mongoose";
+import {
+  _QueryFilter,
+  ModifyResult,
+  QueryOptions,
+  WithLevel1NestedPaths,
+} from "mongoose";
 import { PopulateOptions } from "mongoose";
 import { UpdateQuery } from "mongoose";
 import { ProjectionType } from "mongoose";
@@ -24,7 +29,8 @@ abstract class repoBase<Tdocument> {
       .find(filter, projection)
       .skip(options?.skip!)
       .limit(options?.limit!)
-      .sort(options?.sort).populate(options?.populate as PopulateOptions);
+      .sort(options?.sort)
+      .populate(options?.populate as PopulateOptions);
   }
 
   async findOne({
@@ -63,17 +69,20 @@ abstract class repoBase<Tdocument> {
     });
   }
 
-  //   async findOneAndUpdate({
-  //     filter,
-  //     update,
-  //     options,
-  //   }: {
-  //     filter: QueryFilter<Tdocument>;
-  //     update?: UpdateQuery<Tdocument> | null;
-  //     options?: QueryOptions<Tdocument>;
-  //   }): Promise<HydratedDocument<Tdocument> | null> {
-  //     return await this._model.findOneAndUpdate(filter, update);
-  //   }
+  async findOneAndUpdate({
+    filter,
+    update,
+    options,
+  }: {
+    filter: QueryFilter<WithLevel1NestedPaths<Tdocument>>;
+    update?: UpdateQuery<Tdocument>;
+    options?: QueryOptions<Tdocument>;
+  }): Promise<ModifyResult<Tdocument> | null> {
+    return await this._model.findOneAndUpdate(filter, update, {
+      ...options,
+      new: true,
+    });
+  }
 
   async findByIdAndDelete({
     id,
@@ -84,8 +93,6 @@ abstract class repoBase<Tdocument> {
   }) {
     return await this._model.findByIdAndDelete(id, options);
   }
-
-
 }
 
 export default repoBase;

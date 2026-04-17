@@ -1,5 +1,5 @@
 import { rateLimit } from "express-rate-limit";
-import { ErrorInteralServerError } from "../globalresponse.js";
+import { ErrorInteralServerError } from "../utils/globalresponse.js";
 const limiter = rateLimit({
     windowMs: 1000 * 60,
     limit: 4,

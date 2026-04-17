@@ -5,7 +5,7 @@ export type signUpRequestBody = {
   userName: string;
   email: string;
   password: string;
-  gender?: typeof genderEnum;
-  role?: typeof roleEnum;
+  gender?: string;
+  role?: string;
   phone?: string;
 };

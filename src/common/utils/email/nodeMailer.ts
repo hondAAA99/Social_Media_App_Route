@@ -10,12 +10,10 @@ import { sendOtp } from "./email.templetes.js";
 const transport = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "mohanaddata4@gmail.com",
+    user: MAIL_APP_SENDER,
     pass: MAIL_APP_PASSWORD,
   },
 });
-
-const generateOtp = Math.random() * 100000 * 9;
 
 export async function sendMail({
   to,
@@ -24,17 +22,20 @@ export async function sendMail({
 }: {
   to: string;
   subject: string;
-  data?: any;
+  data: any;
 }) {
-  const emailhtml = () => {
-    if (subject == mailEnum.consrimSingUp) {
-      return sendOtp(generateOtp);
-    }
-  };
+  console.log(data)
   await transport.sendMail({
     from: MAIL_APP_SENDER,
     to,
     subject,
-    html: emailhtml,
+    html: sendOtp(data) ,// function(){
+    // if (subject == mailEnum.consrimSingUp) {
+    //   return sendOtp(data);
+    // } 
   } as Mail.Options);
 }
+
+export const genrateOtp = () => {
+  return Math.floor(Math.random() * 100000);
+};

@@ -21,6 +21,7 @@ export const globalErrorHandling = (
   res: Response,
   next: NextFunction,
 ) => {
+  console.log(err)
   const status = err.statusCode as number || 500 ;
   res.status(status).json({
     status,

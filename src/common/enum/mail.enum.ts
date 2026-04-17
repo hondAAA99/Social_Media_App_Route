@@ -1,6 +1,7 @@
 const mailEnum = {
   sendMail: "sned-email",
-  consrimSingUp: "confirm-sign-up",
+  consrimSingUp: "otp",
+  forgetPassword: "otp",
 };
 
 export default mailEnum;

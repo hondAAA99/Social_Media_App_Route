@@ -61,7 +61,7 @@ export const sendOtp = (otp: number) => {
                   <td align="center" style="background: linear-gradient(135deg, #14141f, #1a1a2e); border-radius:12px; border:1px solid #2a2a40; padding: 28px 20px;">
                     <p style="margin:0 0 6px 0; font-size:11px; font-weight:600; color:#6b6b8a; letter-spacing:3px; text-transform:uppercase;">One-Time Password</p>
                     <p style="margin:0; font-family:'Space Mono', monospace; font-size:42px; font-weight:700; letter-spacing:14px; color:#ffffff; text-shadow: 0 0 30px rgba(108, 99, 255, 0.5);">
-                      {{otp}}
+                      {${otp}}
                     </p>
                   </td>
                 </tr>

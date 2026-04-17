@@ -1,4 +1,4 @@
-import { ErrorInteralServerError } from "../globalresponse.js";
+import { ErrorInteralServerError } from "../utils/globalresponse.js";
 export const validationMiddleWare = (schema) => {
     return async (req, res, next) => {
         const arrOfError = [];

@@ -1,20 +1,23 @@
 import mongoose, { model, Schema } from "mongoose";
 import roleEnum from "../../common/enum/role.enum.js";
 import genderEnum from "../../common/enum/gender.enum.js";
+import providerEnum from "../../common/enum/provider.enum.js";
 
 export interface IUser {
-  _id: Schema.Types.ObjectId;
+  id?: Schema.Types.ObjectId;
   firstName: string;
   lastName: string;
   userName: string;
   email: string;
   password: string;
-  role?: typeof roleEnum;
-  gender?: typeof genderEnum;
+  role?: string;
+  gender?: string;
   createdAt: Date;
   updatedAt: Date;
   phone?: string;
-  confirmed: boolean;
+  confirmed?: boolean | undefined;
+  provider?: string;
+  creadnatials? : Date ;
 }
 
 const userSchema = new Schema<IUser>(
@@ -22,7 +25,9 @@ const userSchema = new Schema<IUser>(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: {
+      type: String,
+    },
     role: {
       type: String,
       default: roleEnum.user,
@@ -35,6 +40,12 @@ const userSchema = new Schema<IUser>(
     },
     phone: { type: String },
     confirmed: { type: Boolean, required: true, default: false },
+    provider: {
+      type: String,
+      enum: Object.values(providerEnum),
+      default: providerEnum.sysyem,
+    },
+    creadnatials: { type: Date },
   },
   {
     timestamps: true,

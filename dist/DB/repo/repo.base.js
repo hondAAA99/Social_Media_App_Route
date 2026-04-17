@@ -11,7 +11,8 @@ class repoBase {
             .find(filter, projection)
             .skip(options?.skip)
             .limit(options?.limit)
-            .sort(options?.sort).populate(options?.populate);
+            .sort(options?.sort)
+            .populate(options?.populate);
     }
     async findOne({ filter, projection, }) {
         return await this._model.findOne(filter, projection);
@@ -25,15 +26,14 @@ class repoBase {
             ...options,
         });
     }
+    async findOneAndUpdate({ filter, update, options, }) {
+        return await this._model.findOneAndUpdate(filter, update, {
+            ...options,
+            new: true,
+        });
+    }
     async findByIdAndDelete({ id, options, }) {
         return await this._model.findByIdAndDelete(id, options);
-    }
-    async userEmailExists(email) {
-        return await this.findOne({
-            filter: {
-                email,
-            },
-        });
     }
 }
 export default repoBase;
