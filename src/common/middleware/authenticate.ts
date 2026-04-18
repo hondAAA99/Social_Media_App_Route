@@ -20,9 +20,8 @@ import cacheKeyEnum from "../enum/cacheKey.enum.js";
     const verify: jsonwebtoken.JwtPayload = accessTokenVerify(
       token,
     ) as jsonwebtoken.JwtPayload;
-
     const user : HydratedDocument<IUser> | null = await new userRepo().findById({
-      id : verify.userId ,
+      id : verify.data.userId ,
     })
     if (!user) ErrorConflict('user does not exists')
     if (user!.creadnatials && user!.creadnatials.getTime() < (verify.iat as number)*1000) 
@@ -36,5 +35,6 @@ import cacheKeyEnum from "../enum/cacheKey.enum.js";
       
     req.user = user as HydratedDocument<IUser>;
     req.token = token as string ;
+    req.tokenDecoded = verify
     next();
   }

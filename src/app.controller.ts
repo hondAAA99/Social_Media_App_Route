@@ -22,7 +22,7 @@ const bootstrap = async () => {
   checkDataBaseConnection();
 
   app.use("/auth", authRouter);
-  app.use("/user", userRouter);
+  app.use("/users", userRouter);
 
   app.all("{/*demo}", (req: Request, res: Response, next: NextFunction) => {
     ErrorNotFound(

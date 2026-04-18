@@ -16,3 +16,4 @@ export const SECRET_ACCESS_TOKEN = process.env.SECRET_ACCESS_TOKEN;
 export const SECRET_REFRESH_TOKEN = process.env.SECRET_REFRESH_TOKEN;
 export const O2AUTH_CLIENT_ID = process.env.O2AUTH_CLIENT_ID;
 export const REDIS_CLIENT = process.env.REDIS_CLIENT;
+export const TOKEN_PREFIX = process.env.TOKEN_PREFIX;

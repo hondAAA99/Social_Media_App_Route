@@ -6,11 +6,11 @@ class userRepo extends repoBase {
         super(_model);
         this._model = _model;
     }
-    async userEmailExists(email) {
+    async userEmailExists({ email, confirmed }) {
         return await this.findOne({
             filter: {
                 email,
-                confirmed: false,
+                confirmed,
             },
         });
     }

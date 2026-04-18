@@ -12,15 +12,18 @@ userRouter.put(
   validationMiddleWare(forgetPassword),
   userServices.forgetPassword,
 );
+
 userRouter.patch(
   "/reset-password",
   validationMiddleWare(resetPassowrd),
   userServices.resetPassowrd,
 );
+
 userRouter.patch(
-  "update-password",
+  "/update-password",
   validationMiddleWare(updatePasswordSchema),
   authenticate,
   userServices.updatePassword
 );
-userRouter.delete("/log-out", authenticate);
+
+userRouter.get("/log-out", authenticate ,userServices.logout);

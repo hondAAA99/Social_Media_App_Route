@@ -6,6 +6,7 @@ import { globalErrorHandling, ErrorNotFound, } from "./common/utils/globalrespon
 import limiter from "./common/middleware/limiter.js";
 import { checkDataBaseConnection } from "./DB/DB.connection.js";
 import { authRouter } from "./model/auth/auth.controller.js";
+import { userRouter } from "./model/user/user.controller.js";
 const app = express();
 const port = Number(PORT);
 const host = HOST;
@@ -14,6 +15,7 @@ const bootstrap = async () => {
     app.use(helmet(), cors(), limiter);
     checkDataBaseConnection();
     app.use("/auth", authRouter);
+    app.use("/users", userRouter);
     app.all("{/*demo}", (req, res, next) => {
         ErrorNotFound(`the request on ${req.url} with method ${req.method} has wrong path`);
     });

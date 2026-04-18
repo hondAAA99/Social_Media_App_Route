@@ -1,11 +1,12 @@
 import jsonwebtoken from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { SECRET_ACCESS_TOKEN, SECRET_REFRESH_TOKEN } from "../../config/config.services.js";
+import { Types } from "mongoose";
 
-export function generateAccessToken({ data }: { data: any }) : string {
+export function generateAccessToken( data : {}) : string {
   return jsonwebtoken.sign(
     {
-      ...data,
+      data,
       id: uuidv4(),
     },
     SECRET_ACCESS_TOKEN,

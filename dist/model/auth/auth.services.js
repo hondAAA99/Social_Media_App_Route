@@ -15,7 +15,7 @@ class auth {
     constructor() { }
     signUp = async (req, res, next) => {
         const { userName, email, password, phone, gender, role, } = req.body;
-        const emailExists = await this._userModel.userEmailExists(email);
+        const emailExists = await this._userModel.userEmailExists({ email });
         if (emailExists) {
             ErrorConflict("email already exists");
         }
@@ -36,36 +36,41 @@ class auth {
     };
     logIn = async (req, res, next) => {
         const { email, password } = req.body;
-        const user = await this._userModel.findOne({
-            filter: {
-                email,
-                confirmed: true,
-            },
-        });
-        if (!user)
+        const emailExists = await this._userModel.userEmailExists({ email, confirmed: true });
+        if (!emailExists) {
+            ErrorConflict("email doesn't exists");
+        }
+        if (!emailExists)
             ErrorConflict("email does not exists or confirmed");
-        if (!GlobalCompare({ plainText: password, hashText: user.password })) {
+        if (!GlobalCompare({ plainText: password, hashText: emailExists.password })) {
             Errorforbidden("wrong password");
         }
-        const { accessToken, refreshToken } = generateTokens(user);
+        const { accessToken, refreshToken } = generateTokens(emailExists);
         SuccessResponse({ res, data: { accessToken, refreshToken } });
     };
     confirmMail = async (req, res, next) => {
         const { email, otp } = req.body;
         const emailExists = await this._userModel.userEmailExists(email);
-        if (!emailExists) {
+        if (emailExists) {
             ErrorConflict("email doesn't exists");
         }
+        if (emailExists?.confirmed == true)
+            ErrorConflict('your email is already confirmed');
         const CachedOtp = await redisServices.getKey({
             key: redisServices.cacheKey({
                 filter: email,
                 subject: mailEnum.consrimSingUp,
             }),
         });
-        console.log(CachedOtp);
         if (!GlobalCompare({ plainText: otp, hashText: CachedOtp }))
             Errorforbidden("wrong otp code");
-        const user = await this._userModel.findOneAndUpdate({
+        await redisServices.deleteKey({
+            key: redisServices.cacheKey({
+                filter: email,
+                subject: mailEnum.consrimSingUp,
+            }),
+        });
+        await this._userModel.findOneAndUpdate({
             filter: { email },
             update: { confirmed: true },
         });
@@ -82,7 +87,7 @@ class auth {
         if (!payload)
             ErrorInteralServerError("invalid token id");
         const { name, email, email_verified, picture } = payload;
-        let emailExists = await this._userModel.userEmailExists(email);
+        let emailExists = await this._userModel.userEmailExists({ email });
         if (!emailExists) {
             emailExists = await this._userModel.create({
                 userName: name,

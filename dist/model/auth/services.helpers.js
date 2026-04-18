@@ -1,10 +1,10 @@
-import { generateAccessToken } from "../../common/security/jsonWebTokens.js";
+import { generateAccessToken, generateRefreshToken } from "../../common/security/jsonWebTokens.js";
 export function generateTokens(user) {
     const accessToken = generateAccessToken({
         userId: user.id,
         role: user.role,
     });
-    const refreshToken = generateAccessToken({
+    const refreshToken = generateRefreshToken({
         userId: user.id,
         role: user.role,
     });

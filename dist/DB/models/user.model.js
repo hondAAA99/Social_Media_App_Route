@@ -26,6 +26,7 @@ const userSchema = new Schema({
         enum: Object.values(providerEnum),
         default: providerEnum.sysyem,
     },
+    creadnatials: { type: Date },
 }, {
     timestamps: true,
     strictQuery: true,
