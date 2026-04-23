@@ -27,6 +27,10 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: {
       type: String,
+      required : function():boolean{
+        if (this.provider == providerEnum.system) return true 
+        else return false
+      }
     },
     role: {
       type: String,
@@ -38,12 +42,17 @@ const userSchema = new Schema<IUser>(
       default: genderEnum.male,
       enum: Object.values(genderEnum),
     },
-    phone: { type: String },
+    phone: { 
+      type: String ,
+      required : function():boolean{
+        if (this.provider == providerEnum.system) return true 
+        else return false
+      }},
     confirmed: { type: Boolean, required: true, default: false },
     provider: {
       type: String,
       enum: Object.values(providerEnum),
-      default: providerEnum.sysyem,
+      default: providerEnum.system,
     },
     creadnatials: { type: Date },
   },

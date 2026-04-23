@@ -23,7 +23,7 @@ class auth {
   private readonly _userModel = new userRepo();
   constructor() {}
 
-  public signUp = async (
+  signUp = async (
     req: Request,
     res: Response,
     next: NextFunction,
@@ -57,7 +57,7 @@ class auth {
     SuccessResponse({ res, data: "please confirm your email" });
   };
 
-  public logIn = async (
+  logIn = async (
     req: Request,
     res: Response,
     next: NextFunction,
@@ -81,7 +81,7 @@ class auth {
     SuccessResponse({ res, data: { accessToken, refreshToken } });
   };
 
-  public confirmMail = async (
+  confirmMail = async (
     req: Request,
     res: Response,
     next: NextFunction,
@@ -117,7 +117,7 @@ class auth {
     SuccessResponse({ res, data: "email confirmed" });
   };
 
-  public signUpAndLoginWithGmail = async (
+  signUpAndLoginWithGmail = async (
     req: Request,
     res: Response,
     next: NextFunction,
@@ -149,13 +149,33 @@ class auth {
       } as Partial<IUser>);
     }
 
-    if (emailExists?.provider == providerEnum.sysyem)
+    if (emailExists?.provider == providerEnum.system)
       ErrorConflict("please login throw system");
 
     const { accessToken, refreshToken } = generateTokens(emailExists);
 
     SuccessResponse({ res, data: { accessToken, refreshToken } });
   };
+
+  reSendOtp = async(req: Request,
+    res: Response,
+    next: NextFunction,
+): Promise<void> =>  {
+      const {email} = req.body
+
+      const user = await this._userModel.findOne({filter : email })
+      if (!user){
+        ErrorConflict('user does not exists');
+      }
+
+      await sendEmail({
+        to : email ,
+        subject : mailEnum.reSendOtp,
+        data : genrateOtp(),
+      })
+
+      SuccessResponse({res,data : 'otp send please confirm your mail'})
+  }
 }
 
 export default new auth();
