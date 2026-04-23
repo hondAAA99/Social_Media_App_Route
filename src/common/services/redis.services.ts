@@ -1,11 +1,28 @@
-    import redisClient from "./redis.connection.js";
-    import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
-    import { ErrorInteralServerError } from "../../common/utils/globalresponse.js";
-    import { RedisArgument } from "redis";
+    import { ErrorInteralServerError } from "../utils/globalresponse.js";
+    import redis , { createClient, RedisArgument, RedisClientType } from "redis";
     import { string } from "zod";
+import { REDIS_CLIENT } from "../../config/config.services.js";
+import { eventEmitter } from "../utils/email/email.event.js";
 
     class redisService {
-    constructor(private _client = redisClient) {}
+      private readonly _client : RedisClientType = redis.createClient({});
+    constructor() {
+      this._client = createClient({
+      url: REDIS_CLIENT,
+          })
+      this.eventHandler()
+    }
+
+    async connect(){
+      await this._client.connect();
+      console.log('connected to redis succeded')
+    }  
+    
+    eventHandler(){
+      this._client.on('error',()=>{
+        ErrorInteralServerError('connection to redis failed')
+      })
+    }
 
     private async keyExists({ key }: { key: RedisArgument }): Promise<number> {
     return await this._client.exists(key);
@@ -39,7 +56,7 @@
     }
     }
 
-    async getKey({ key }: { key: RedisArgument }): Promise<void | string> {
+    async getKey({ key }: { key: string }): Promise<void | string> {
     try {
     if ((!this.keyExists({ key }) as unknown as number) > 0) {
       ErrorInteralServerError("key expiered");
@@ -55,7 +72,7 @@
     }
     }
 
-    async getAllKeys(pattern: RedisArgument): Promise<string[] | any> {
+    async getAllKeys(pattern: RedisArgument): Promise<String[] | any> {
     try {
     const value = await this._client.keys(pattern);
     return value;

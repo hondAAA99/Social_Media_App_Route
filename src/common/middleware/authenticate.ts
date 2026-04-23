@@ -1,24 +1,37 @@
-  import type { NextFunction, Request, Response } from "express";
-  import { TOKEN_PREFIX } from "../../config/config.services.js";
-  import { ErrorConflict, Errorforbidden, ErrorUnAuthorizedRequest } from "../utils/globalresponse.js";
-  import { accessTokenVerify } from "../security/jsonWebTokens.js";
-  import jsonwebtoken from "jsonwebtoken";
-  import userRepo from "../../DB/repo/user.repo.js";
-  import { HydratedDocument } from "mongoose";
-  import { IUser } from "../../DB/models/user.model.js";
-import redisServices from "../../DB/Redis/redis.services.js";
+import type { NextFunction, Request, Response } from "express";
+import { SECRET_ADMIN_ACCESS_TOKEN, SECRET_USER_ACCESS_TOKEN, TOKEN_ADMIN_PREFIX, TOKEN_USER_PREFIX } from "../../config/config.services.js";
+import { ErrorConflict, Errorforbidden, ErrorUnAuthorizedRequest } from "../utils/globalresponse.js";
+import { accessTokenVerify } from "../security/jsonWebTokens.js";
+import jsonwebtoken from "jsonwebtoken";
+import userRepo from "../../DB/repo/user.repo.js";
+import { HydratedDocument } from "mongoose";
+import { IUser } from "../../DB/models/user.model.js";
 import cacheKeyEnum from "../enum/cacheKey.enum.js";
+import redisServices from "../services/redis.services.js";
+import { string } from "zod";
 
 
 
-  export async function authenticate(req : Request,res:Response,next : NextFunction){
-    let authorization :any = req.headers.authorization 
+  export async function authenticate(req : Request ,res:Response,next : NextFunction){
+    let {authorization} : any = req.headers 
 
     let [prefix, token] : [string,string] = authorization.split(" ");
-    if (prefix != TOKEN_PREFIX) Errorforbidden('invalid token')
+    if ( !prefix ){
+      Errorforbidden('invalid token')
+    }
+
+    const secret : string = (function (){
+      if ( prefix == TOKEN_USER_PREFIX){
+        return SECRET_ADMIN_ACCESS_TOKEN
+      }
+      else if (prefix == TOKEN_ADMIN_PREFIX){
+        return SECRET_USER_ACCESS_TOKEN
+      }
+        return Errorforbidden('invalid token')
+    })()
     
     const verify: jsonwebtoken.JwtPayload = accessTokenVerify(
-      token,
+      {token , secret },
     ) as jsonwebtoken.JwtPayload;
     const user : HydratedDocument<IUser> | null = await new userRepo().findById({
       id : verify.data.userId ,

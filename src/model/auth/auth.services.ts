@@ -15,7 +15,7 @@ import { sendEmail } from "../../common/utils/email/sendEmail.js";
 import mailEnum from "../../common/enum/mail.enum.js";
 import { genrateOtp } from "../../common/utils/email/nodeMailer.js";
 import { generateTokens } from "./services.helpers.js";
-import redisServices from "../../DB/Redis/redis.services.js";
+import redisServices from "../../common/services/redis.services.js";
 import { O2AUTH_CLIENT_ID } from "../../config/config.services.js";
 import { LoginTicket, OAuth2Client, TokenPayload } from "google-auth-library";
 import providerEnum from "../../common/enum/provider.enum.js";
@@ -34,7 +34,6 @@ class auth {
       password,
       phone,
       gender,
-      role,
     }: signUpRequestBody = req.body;
     const emailExists : HydratedDocument<IUser> | null = await this._userModel.userEmailExists({email});
     if (emailExists) {
@@ -47,7 +46,6 @@ class auth {
       password: Globalhash({ plainText: password }),
       phone: phone ? Globalencrypt({ plainText: phone }) : null,
       gender,
-      role,
     } as Partial<IUser>);
 
     await sendEmail({

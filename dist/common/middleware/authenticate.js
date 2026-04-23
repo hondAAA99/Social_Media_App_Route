@@ -1,4 +1,4 @@
-import { TOKEN_PREFIX } from "../../config/config.services.js";
+import { TOKEN_USER_PREFIX } from "../../config/config.services.js";
 import { ErrorConflict, Errorforbidden, ErrorUnAuthorizedRequest } from "../utils/globalresponse.js";
 import { accessTokenVerify } from "../security/jsonWebTokens.js";
 import userRepo from "../../DB/repo/user.repo.js";
@@ -7,7 +7,7 @@ import cacheKeyEnum from "../enum/cacheKey.enum.js";
 export async function authenticate(req, res, next) {
     let authorization = req.headers.authorization;
     let [prefix, token] = authorization.split(" ");
-    if (prefix != TOKEN_PREFIX)
+    if (prefix != TOKEN_USER_PREFIX)
         Errorforbidden('invalid token');
     const verify = accessTokenVerify(token);
     const user = await new userRepo().findById({

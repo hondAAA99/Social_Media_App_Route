@@ -12,6 +12,7 @@ import limiter from "./common/middleware/limiter.js";
 import { checkDataBaseConnection } from "./DB/DB.connection.js";
 import { authRouter } from "./model/auth/auth.controller.js";
 import { userRouter } from "./model/user/user.controller.js";
+import redisServices from "./common/services/redis.services.js";
 const app: Application = express();
 const port = Number(PORT);
 const host = HOST;
@@ -19,8 +20,7 @@ const host = HOST;
 const bootstrap = async () => {
   app.use(express.json());
   app.use(helmet(), cors(), limiter);
-  checkDataBaseConnection();
-
+  redisServices.connect()
   app.use("/auth", authRouter);
   app.use("/users", userRouter);
 
