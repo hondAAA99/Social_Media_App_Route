@@ -1,5 +1,5 @@
 const providerEnum = {
-    sysyem: "system",
+    system: "system",
     google: "google",
 };
 export default providerEnum;

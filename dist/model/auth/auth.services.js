@@ -6,7 +6,7 @@ import { sendEmail } from "../../common/utils/email/sendEmail.js";
 import mailEnum from "../../common/enum/mail.enum.js";
 import { genrateOtp } from "../../common/utils/email/nodeMailer.js";
 import { generateTokens } from "./services.helpers.js";
-import redisServices from "../../DB/Redis/redis.services.js";
+import redisServices from "../../common/services/redis.services.js";
 import { O2AUTH_CLIENT_ID } from "../../config/config.services.js";
 import { OAuth2Client } from "google-auth-library";
 import providerEnum from "../../common/enum/provider.enum.js";
@@ -14,7 +14,7 @@ class auth {
     _userModel = new userRepo();
     constructor() { }
     signUp = async (req, res, next) => {
-        const { userName, email, password, phone, gender, role, } = req.body;
+        const { userName, email, password, phone, gender, } = req.body;
         const emailExists = await this._userModel.userEmailExists({ email });
         if (emailExists) {
             ErrorConflict("email already exists");
@@ -25,7 +25,6 @@ class auth {
             password: Globalhash({ plainText: password }),
             phone: phone ? Globalencrypt({ plainText: phone }) : null,
             gender,
-            role,
         });
         await sendEmail({
             to: email,
@@ -96,10 +95,23 @@ class auth {
                 confirmed: email_verified,
             });
         }
-        if (emailExists?.provider == providerEnum.sysyem)
+        if (emailExists?.provider == providerEnum.system)
             ErrorConflict("please login throw system");
         const { accessToken, refreshToken } = generateTokens(emailExists);
         SuccessResponse({ res, data: { accessToken, refreshToken } });
+    };
+    reSendOtp = async (req, res, next) => {
+        const { email } = req.body;
+        const user = await this._userModel.findOne({ filter: email });
+        if (!user) {
+            ErrorConflict('user does not exists');
+        }
+        await sendEmail({
+            to: email,
+            subject: mailEnum.reSendOtp,
+            data: genrateOtp(),
+        });
+        SuccessResponse({ res, data: 'otp send please confirm your mail' });
     };
 }
 export default new auth();

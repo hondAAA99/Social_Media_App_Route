@@ -1,16 +1,17 @@
 import type { Request, Response, NextFunction } from "express";
 import { IUser } from "../../DB/models/user.model.js";
-import { signUpRequestBody } from "./auth.dto.js";
+
 import {
   ErrorConflict,
   Errorforbidden,
   ErrorInteralServerError,
+  ErrorUnAuthorizedRequest,
   SuccessResponse,
 } from "../../common/utils/globalresponse.js";
-import { HydratedDocument } from "mongoose";
+import { _QueryFilter, HydratedDocument } from "mongoose";
 import userRepo from "../../DB/repo/user.repo.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
-import { Globalencrypt } from "../../common/security/encrypt.js";
+import { Globaldecrypt, Globalencrypt } from "../../common/security/encrypt.js";
 import { sendEmail } from "../../common/utils/email/sendEmail.js";
 import mailEnum from "../../common/enum/mail.enum.js";
 import { genrateOtp } from "../../common/utils/email/nodeMailer.js";
@@ -34,7 +35,7 @@ class auth {
       password,
       phone,
       gender,
-    }: signUpRequestBody = req.body;
+    } = req.body;
     const emailExists : HydratedDocument<IUser> | null = await this._userModel.userEmailExists({email});
     if (emailExists) {
       ErrorConflict("email already exists");
@@ -87,7 +88,7 @@ class auth {
     next: NextFunction,
   ): Promise<void> => {
     const { email , otp  } = req.body;
-    const emailExists : HydratedDocument<IUser> | null = await this._userModel.userEmailExists(email);
+    const emailExists : HydratedDocument<IUser> | null = await this._userModel.userEmailExists({email});
     if (emailExists) {
       ErrorConflict("email doesn't exists");
     }
@@ -157,13 +158,25 @@ class auth {
     SuccessResponse({ res, data: { accessToken, refreshToken } });
   };
 
+  getProfile = (req: Request,
+    res: Response,
+    next: NextFunction)=>{
+      SuccessResponse({res,data : {
+        userName : req.user?.userName,
+        email : req.user?.email,
+        age : req.user?.age,
+        gender : req.user?.gender,
+        phone : Globaldecrypt({ cipherText : req.user?.phone! }) ,
+      }})
+    }
+
   reSendOtp = async(req: Request,
     res: Response,
     next: NextFunction,
 ): Promise<void> =>  {
       const {email} = req.body
 
-      const user = await this._userModel.findOne({filter : email })
+      const user = await this._userModel.findOne({filter : email! })
       if (!user){
         ErrorConflict('user does not exists');
       }
@@ -175,6 +188,58 @@ class auth {
       })
 
       SuccessResponse({res,data : 'otp send please confirm your mail'})
+  }
+
+    forgetPassword = async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+    console.log(this._userModel)
+    const userEmailExists: HydratedDocument<IUser> | null =
+      await this._userModel.userEmailExists({ email, confirmed: true });
+    if (!userEmailExists) {
+      ErrorConflict("user does not exists");
+    }
+
+    await sendEmail({
+      to: email,
+      subject: mailEnum.forgetPassword,
+      data: genrateOtp(),
+    });
+    SuccessResponse({ res, data: "please confirm your email" });
+  }
+
+  resetPassowrd = async (req: Request, res: Response, next: NextFunction) => {
+    const { email, newPassword, otp } = req.body;
+    const userEmailExists: HydratedDocument<IUser> | null =
+      await this._userModel.userEmailExists({ email, confirmed: true });
+
+    if (!userEmailExists) {
+      ErrorConflict("email does not exists");
+    }
+    const CachedOtp: string = (await redisServices.getKey({
+      key: redisServices.cacheKey({
+        filter: email,
+        subject: mailEnum.forgetPassword,
+      }),
+    })) as string;
+
+    if (!GlobalCompare({ plainText: otp, hashText: CachedOtp })) {
+      ErrorUnAuthorizedRequest("wrong otp");
+    }
+    await redisServices.deleteKey({
+      key: redisServices.cacheKey({
+        filter: email,
+        subject: mailEnum.forgetPassword,
+      }),
+    });
+
+    await this._userModel.findOneAndUpdate({
+      filter: { email, confirmed: true },
+      update: {
+        password: Globalhash({ plainText: newPassword }),
+      },
+    });
+
+    SuccessResponse({ res, data: "password updated" });
   }
 }
 

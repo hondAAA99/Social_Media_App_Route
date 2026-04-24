@@ -6,4 +6,5 @@ export const authRouter = Router();
 authRouter.post("/sign-up", validationMiddleWare(signUpSchema), auth.signUp);
 authRouter.post("/confirm-sign-up", validationMiddleWare(confirmSignUpSchema), auth.confirmMail);
 authRouter.post("/log-in", validationMiddleWare(signInSchema), auth.logIn);
+authRouter.post('/resend-otp', auth.reSendOtp);
 authRouter.post("/sign-with-google", auth.signUpAndLoginWithGmail);

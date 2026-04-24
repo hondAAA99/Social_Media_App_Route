@@ -2,6 +2,7 @@ import mongoose, { model, Schema } from "mongoose";
 import roleEnum from "../../common/enum/role.enum.js";
 import genderEnum from "../../common/enum/gender.enum.js";
 import providerEnum from "../../common/enum/provider.enum.js";
+import { Globalhash } from "../../common/security/hash.js";
 
 export interface IUser {
   id?: Schema.Types.ObjectId;
@@ -11,6 +12,7 @@ export interface IUser {
   email: string;
   password: string;
   role?: string;
+  age? : number ;
   gender?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -48,6 +50,12 @@ const userSchema = new Schema<IUser>(
         if (this.provider == providerEnum.system) return true 
         else return false
       }},
+    age: { 
+      type: String ,
+      required : function():boolean{
+        if (this.provider == providerEnum.system) return true 
+        else return false
+      }},
     confirmed: { type: Boolean, required: true, default: false },
     provider: {
       type: String,
@@ -75,6 +83,23 @@ userSchema
   .get(function () {
     return this.firstName + " " + this.lastName;
   });
+
+
+// userSchema.pre('save',function(){
+//   console.log('========1=========')
+//   console.log(this.modifiedPaths())
+
+//   if ( this.isModified('password')){
+//     this.password = Globalhash({plainText : this.password})
+//   }
+// })
+
+// userSchema.post('save',function(){
+//   console.log('========2========')
+//   console.log(this)
+// })
+
+
 
 const userModel = mongoose.models.users || model("users", userSchema);
 

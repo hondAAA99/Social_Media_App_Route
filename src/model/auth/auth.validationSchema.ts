@@ -33,3 +33,16 @@ export const confirmSignUpSchema = {
     otp: zod.string().length(5),
   }),
 };
+
+export const forgetPassword = {
+body : zod.object({
+    email : zod.email(),
+})
+}
+export const resetPassowrd = {
+  body: zod.object({
+    email : zod.email(),
+    newPassword : zod.string(),
+    otp : zod.string().length(5),
+  }),
+};

@@ -23,7 +23,7 @@ export const sendEmail = async ({
       subject : cacheKeyEnum.block
     })
   )
-  if (!blockedUser) Errorforbidden(`you are being blocked please wait for ${blockedUser}`)
+  if (blockedUser && blockedUser > 0 ) Errorforbidden(`you are being blocked please wait for ${blockedUser}`)
 
   // check email attempts
 
