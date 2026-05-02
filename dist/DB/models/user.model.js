@@ -2,7 +2,6 @@ import mongoose, { model, Schema } from "mongoose";
 import roleEnum from "../../common/enum/role.enum.js";
 import genderEnum from "../../common/enum/gender.enum.js";
 import providerEnum from "../../common/enum/provider.enum.js";
-import { Globalhash } from "../../common/security/hash.js";
 const userSchema = new Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
@@ -35,6 +34,15 @@ const userSchema = new Schema({
                 return false;
         }
     },
+    age: {
+        type: String,
+        required: function () {
+            if (this.provider == providerEnum.system)
+                return true;
+            else
+                return false;
+        }
+    },
     confirmed: { type: Boolean, required: true, default: false },
     provider: {
         type: String,
@@ -42,6 +50,7 @@ const userSchema = new Schema({
         default: providerEnum.system,
     },
     creadnatials: { type: Date },
+    deletedAt: { type: Date }
 }, {
     timestamps: true,
     strictQuery: true,
@@ -59,16 +68,13 @@ userSchema
     .get(function () {
     return this.firstName + " " + this.lastName;
 });
-userSchema.pre('save', function () {
-    console.log('========1=========');
-    console.log(this.modifiedPaths());
-    if (this.isModified('password')) {
-        this.password = Globalhash({ plainText: this.password });
+userSchema.pre(['deleteOne', 'deleteMany', 'findOneAndDelete'], function () {
+    if (this.getQuery().pranoid == true) {
+        this.setQuery({ ...this.getQuery() });
     }
-});
-userSchema.post('save', function () {
-    console.log('========2========');
-    console.log(this);
+    else
+        this.setQuery({ deleteAt: { $exists: false }, ...this.getQuery() });
+    console.log(this.getQuery());
 });
 const userModel = mongoose.models.users || model("users", userSchema);
 export default userModel;

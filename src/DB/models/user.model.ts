@@ -20,6 +20,7 @@ export interface IUser {
   confirmed?: boolean | undefined;
   provider?: string;
   creadnatials? : Date ;
+  deletedAt? : Date ;
 }
 
 const userSchema = new Schema<IUser>(
@@ -63,6 +64,7 @@ const userSchema = new Schema<IUser>(
       default: providerEnum.system,
     },
     creadnatials: { type: Date },
+    deletedAt : { type : Date }
   },
   {
     timestamps: true,
@@ -85,19 +87,14 @@ userSchema
   });
 
 
-// userSchema.pre('save',function(){
-//   console.log('========1=========')
-//   console.log(this.modifiedPaths())
-
-//   if ( this.isModified('password')){
-//     this.password = Globalhash({plainText : this.password})
-//   }
-// })
-
-// userSchema.post('save',function(){
-//   console.log('========2========')
-//   console.log(this)
-// })
+userSchema.pre(['findOne','find'],function(){
+  const { paranoid , ...rest } = this.getQuery()
+  if ( paranoid == true ){
+    this.setQuery({ deleteAt : { $exists : false } , rest })
+  }
+  else this.setQuery({ rest })
+  
+})
 
 
 

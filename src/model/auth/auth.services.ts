@@ -190,7 +190,7 @@ class auth {
       SuccessResponse({res,data : 'otp send please confirm your mail'})
   }
 
-    forgetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  forgetPassword = async (req: Request, res: Response, next: NextFunction) => {
     const { email } = req.body;
     console.log(this._userModel)
     const userEmailExists: HydratedDocument<IUser> | null =

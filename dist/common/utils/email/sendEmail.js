@@ -10,7 +10,7 @@ export const sendEmail = async ({ to, subject, data, }) => {
         filter: to,
         subject: cacheKeyEnum.block
     }));
-    if (!blockedUser)
+    if (blockedUser && blockedUser > 0)
         Errorforbidden(`you are being blocked please wait for ${blockedUser}`);
     let attempts = await redisServices.getKey({
         key: redisServices.cacheKey({

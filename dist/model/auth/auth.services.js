@@ -1,7 +1,7 @@
-import { ErrorConflict, Errorforbidden, ErrorInteralServerError, SuccessResponse, } from "../../common/utils/globalresponse.js";
+import { ErrorConflict, Errorforbidden, ErrorInteralServerError, ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
 import userRepo from "../../DB/repo/user.repo.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
-import { Globalencrypt } from "../../common/security/encrypt.js";
+import { Globaldecrypt, Globalencrypt } from "../../common/security/encrypt.js";
 import { sendEmail } from "../../common/utils/email/sendEmail.js";
 import mailEnum from "../../common/enum/mail.enum.js";
 import { genrateOtp } from "../../common/utils/email/nodeMailer.js";
@@ -49,7 +49,7 @@ class auth {
     };
     confirmMail = async (req, res, next) => {
         const { email, otp } = req.body;
-        const emailExists = await this._userModel.userEmailExists(email);
+        const emailExists = await this._userModel.userEmailExists({ email });
         if (emailExists) {
             ErrorConflict("email doesn't exists");
         }
@@ -100,6 +100,15 @@ class auth {
         const { accessToken, refreshToken } = generateTokens(emailExists);
         SuccessResponse({ res, data: { accessToken, refreshToken } });
     };
+    getProfile = (req, res, next) => {
+        SuccessResponse({ res, data: {
+                userName: req.user?.userName,
+                email: req.user?.email,
+                age: req.user?.age,
+                gender: req.user?.gender,
+                phone: Globaldecrypt({ cipherText: req.user?.phone }),
+            } });
+    };
     reSendOtp = async (req, res, next) => {
         const { email } = req.body;
         const user = await this._userModel.findOne({ filter: email });
@@ -112,6 +121,56 @@ class auth {
             data: genrateOtp(),
         });
         SuccessResponse({ res, data: 'otp send please confirm your mail' });
+    };
+    forgetPassword = async (req, res, next) => {
+        const { email } = req.body;
+        console.log(this._userModel);
+        const userEmailExists = await this._userModel.userEmailExists({ email, confirmed: true });
+        if (!userEmailExists) {
+            ErrorConflict("user does not exists");
+        }
+        await sendEmail({
+            to: email,
+            subject: mailEnum.forgetPassword,
+            data: genrateOtp(),
+        });
+        SuccessResponse({ res, data: "please confirm your email" });
+    };
+    resetPassowrd = async (req, res, next) => {
+        const { email, newPassword, otp } = req.body;
+        const userEmailExists = await this._userModel.userEmailExists({ email, confirmed: true });
+        if (!userEmailExists) {
+            ErrorConflict("email does not exists");
+        }
+        const CachedOtp = (await redisServices.getKey({
+            key: redisServices.cacheKey({
+                filter: email,
+                subject: mailEnum.forgetPassword,
+            }),
+        }));
+        if (!GlobalCompare({ plainText: otp, hashText: CachedOtp })) {
+            ErrorUnAuthorizedRequest("wrong otp");
+        }
+        await redisServices.deleteKey({
+            key: redisServices.cacheKey({
+                filter: email,
+                subject: mailEnum.forgetPassword,
+            }),
+        });
+        await this._userModel.findOneAndUpdate({
+            filter: { email, confirmed: true },
+            update: {
+                password: Globalhash({ plainText: newPassword }),
+            },
+        });
+        SuccessResponse({ res, data: "password updated" });
+    };
+    deleteUser = async (req, res, next) => {
+        const { email } = req.body;
+        const user = await this._userModel.deleteOne({
+            filter: { email },
+        });
+        SuccessResponse({ res, data: user });
     };
 }
 export default new auth();

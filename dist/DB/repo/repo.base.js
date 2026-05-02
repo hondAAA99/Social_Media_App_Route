@@ -35,5 +35,14 @@ class repoBase {
     async findByIdAndDelete({ id, options, }) {
         return await this._model.findByIdAndDelete(id, options);
     }
+    async deleteOne({ filter, options, }) {
+        return await this._model.deleteOne(filter);
+    }
+    async deleteMany({ filter, options, paranoid = false }) {
+        return await this._model.deleteMany(filter);
+    }
+    async deleteById({ id, options, paranoid = false }) {
+        return await this._model.findByIdAndDelete(id);
+    }
 }
 export default repoBase;

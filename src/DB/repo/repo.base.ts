@@ -93,6 +93,42 @@ abstract class repoBase<Tdocument> {
   }) {
     return await this._model.findByIdAndDelete(id, options);
   }
+
+  async deleteOne({    
+    filter,
+    options,
+  }: {
+    filter: QueryFilter<Tdocument> ,
+    options?: QueryOptions<Tdocument>;
+}) {
+    return await this._model.deleteOne(filter as any)
+  }
+
+  async deleteMany({
+    filter,
+    options,
+    paranoid = false 
+
+  }: {
+    filter: QueryFilter<Tdocument>,
+    options?: QueryOptions<Tdocument>;
+    paranoid : Boolean
+  }) {
+    return await this._model.deleteMany(filter)
+  }
+
+  async deleteById({
+    id,
+    options,
+    paranoid = false 
+  }: {
+    id: Schema.Types.ObjectId;
+    options?: QueryOptions<Tdocument>;
+    paranoid : Boolean
+
+  }) {
+    return await this._model.findByIdAndDelete(id)
+  }
 }
 
 export default repoBase;
