@@ -17,3 +17,9 @@ body : zod.object({
     }
 })
 }
+export const createSignedUrlSchem = {
+body : zod.object({
+    ContetnType : zod.string(),
+    fileName : zod.string(),
+})
+}

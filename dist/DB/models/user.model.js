@@ -49,6 +49,7 @@ const userSchema = new Schema({
         enum: Object.values(providerEnum),
         default: providerEnum.system,
     },
+    profilePicture: { type: String },
     creadnatials: { type: Date },
     deletedAt: { type: Date }
 }, {
@@ -67,14 +68,6 @@ userSchema
 })
     .get(function () {
     return this.firstName + " " + this.lastName;
-});
-userSchema.pre(['deleteOne', 'deleteMany', 'findOneAndDelete'], function () {
-    if (this.getQuery().pranoid == true) {
-        this.setQuery({ ...this.getQuery() });
-    }
-    else
-        this.setQuery({ deleteAt: { $exists: false }, ...this.getQuery() });
-    console.log(this.getQuery());
 });
 const userModel = mongoose.models.users || model("users", userSchema);
 export default userModel;

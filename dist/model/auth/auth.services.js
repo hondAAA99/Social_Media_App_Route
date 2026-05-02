@@ -165,12 +165,5 @@ class auth {
         });
         SuccessResponse({ res, data: "password updated" });
     };
-    deleteUser = async (req, res, next) => {
-        const { email } = req.body;
-        const user = await this._userModel.deleteOne({
-            filter: { email },
-        });
-        SuccessResponse({ res, data: user });
-    };
 }
 export default new auth();

@@ -15,3 +15,9 @@ export const updatePasswordSchema = {
         }
     })
 };
+export const createSignedUrlSchem = {
+    body: zod.object({
+        ContetnType: zod.string(),
+        fileName: zod.string(),
+    })
+};

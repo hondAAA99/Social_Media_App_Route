@@ -21,6 +21,7 @@ export interface IUser {
   provider?: string;
   creadnatials? : Date ;
   deletedAt? : Date ;
+  profilePicture? : string
 }
 
 const userSchema = new Schema<IUser>(
@@ -63,6 +64,7 @@ const userSchema = new Schema<IUser>(
       enum: Object.values(providerEnum),
       default: providerEnum.system,
     },
+    profilePicture : { type : String },
     creadnatials: { type: Date },
     deletedAt : { type : Date }
   },
@@ -87,14 +89,13 @@ userSchema
   });
 
 
-userSchema.pre(['findOne','find'],function(){
-  const { paranoid , ...rest } = this.getQuery()
-  if ( paranoid == true ){
-    this.setQuery({ deleteAt : { $exists : false } , rest })
-  }
-  else this.setQuery({ rest })
-  
-})
+// userSchema.pre(['findOne','find'],function(){
+//   const { paranoid , ...rest } = this.getQuery()
+//   if ( paranoid == true ){
+//     this.setQuery({ deleteAt : { $exists : false } , rest })
+//   }
+//   else this.setQuery({ rest })
+// })
 
 
 
