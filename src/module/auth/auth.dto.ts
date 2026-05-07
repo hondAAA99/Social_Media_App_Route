@@ -1,5 +1,3 @@
-import roleEnum from "../../common/enum/role.enum.js";
-import genderEnum from "../../common/enum/gender.enum.js";
 import z from "zod";
 import { confirmSignUpSchema, signInSchema, signUpSchema } from "./auth.validationSchema.js";
 

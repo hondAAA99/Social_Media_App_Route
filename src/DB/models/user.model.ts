@@ -89,13 +89,13 @@ userSchema
   });
 
 
-// userSchema.pre(['findOne','find'],function(){
-//   const { paranoid , ...rest } = this.getQuery()
-//   if ( paranoid == true ){
-//     this.setQuery({ deleteAt : { $exists : false } , rest })
-//   }
-//   else this.setQuery({ rest })
-// })
+userSchema.pre(['findOne','find'],function(){
+  const { paranoid , ...rest } = this.getQuery()
+  if ( paranoid == true ){
+    this.setQuery({ deleteAt : { $exists : false } , rest })
+  }
+  else this.setQuery({ rest })
+})
 
 
 

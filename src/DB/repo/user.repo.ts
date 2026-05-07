@@ -18,4 +18,4 @@
   }
   }
 
-  export default userRepo;
+  export default new userRepo();

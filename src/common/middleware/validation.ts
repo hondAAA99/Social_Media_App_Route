@@ -10,6 +10,14 @@ export const validationMiddleWare = (schema: schemaType) => {
     const arrOfError = [];
     for (const key of Object.keys(schema) as reqType[]) {
       if (!req[key]) continue;
+
+      if (req?.file) {
+        req.body.attachment = req.file;
+      }
+      if (req?.files) {
+        req.body.attachments = req.files;
+      }
+
       const result = (await schema[key]?.safeParseAsync(req[key])) as {
         success: boolean;
         error: any;
