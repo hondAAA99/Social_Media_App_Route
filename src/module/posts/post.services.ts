@@ -14,6 +14,7 @@ import s3Services from "../../common/services/s3Services.js";
 import { randomUUID } from "crypto";
 import { ObjectId, Schema, Types } from "mongoose";
 import fireBaseServices from "../../common/services/fireBase.services.js";
+import availabiltyEnum from "../../common/enum/availablity.enum.js";
 
 class postServices {
   private readonly _postModel = postRepo;
@@ -79,12 +80,44 @@ class postServices {
       }
 
       await this._fireBase.sendNotifications({
-        tokens : fcmArr
-      })
+        tokens: fcmArr,
+      });
 
       SuccessResponse({ res, data: post });
     }
   };
+
+  getPosts = async (req: Request, res: Response, next: NextFunction) => {
+    const posts = await this._postModel.paginate({
+      page: +req.body?.page,
+      limit: +req.body?.limit,
+      search: {
+        $or: [
+          postAvailbilty(req),
+          ...searchQuery
+        ],
+      },
+    });
+
+    // const posts = await this._postModel.findAll({
+    //   filter : {
+    //
+    // })
+  };
+}
+
+function postAvailbilty(req: Request) {
+  return [
+    { availablity: availabiltyEnum.onlyMe, createdBy: req?.user!.id },
+    {
+      availablity: availabiltyEnum.freinds,
+      tags: {
+        $in: [req?.user!.id, [...req?.user!.friends]],
+      },
+    },
+    { availablity: availabiltyEnum.public },
+    { tags: { $in: [req?.user!.id] } },
+  ];
 }
 
 export default new postServices();

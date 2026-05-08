@@ -94,41 +94,78 @@ abstract class repoBase<Tdocument> {
     return await this._model.findByIdAndDelete(id, options);
   }
 
-  async deleteOne({    
+  async deleteOne({
     filter,
     options,
   }: {
-    filter: QueryFilter<Tdocument> ,
+    filter: QueryFilter<Tdocument>;
     options?: QueryOptions<Tdocument>;
-}) {
-    return await this._model.deleteOne(filter as any)
+  }) {
+    return await this._model.deleteOne(filter as any);
   }
 
   async deleteMany({
     filter,
     options,
-    paranoid = false 
-
+    paranoid = false,
   }: {
-    filter: QueryFilter<Tdocument>,
+    filter: QueryFilter<Tdocument>;
     options?: QueryOptions<Tdocument>;
-    paranoid : Boolean
+    paranoid: Boolean;
   }) {
-    return await this._model.deleteMany(filter)
+    return await this._model.deleteMany(filter);
   }
 
   async deleteById({
     id,
     options,
-    paranoid = false 
+    paranoid = false,
   }: {
     id: Schema.Types.ObjectId;
     options?: QueryOptions<Tdocument>;
-    paranoid : Boolean
-
+    paranoid: Boolean;
   }) {
-    return await this._model.findByIdAndDelete(id)
+    return await this._model.findByIdAndDelete(id);
   }
+
+  async paginate({
+    page,
+    limit,
+    sort,
+    populate,
+    search,
+  }: {
+    page: number;
+    limit?: number;
+    sort?: any;
+    populate?: any;
+    search?: QueryFilter<Tdocument>;
+  }) {
+    ((page = page < 0 ? 1 : +page!),
+      (limit = limit && limit < 0 ? 2 : +limit!));
+
+    const skip = (page - 1) * limit;
+
+    const [ data , totalDoc ]= await Promise.all(
+      (await this._model.find({ ...(search ?? {} ) }).skip(skip).limit(limit).populate(populate)).sort(sort),
+      this._model.countDocuments({...(search ?/ {})})
+    )
+
+
+    const totalPages = Math.ceil(totalDoc/limit)
+
+    return {
+    meta : {
+      currentPage : page , 
+      totalDoc,
+      totalPages,
+      limit
+    },
+    data 
+  }
+  }
+
+
 }
 
 export default repoBase;
