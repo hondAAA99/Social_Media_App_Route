@@ -48,7 +48,7 @@ abstract class repoBase<Tdocument> {
     id,
     projection,
   }: {
-    id: Schema.Types.ObjectId;
+    id: Schema.Types.ObjectId | any ;
     projection?: ProjectionType<Tdocument> | null | undefined;
   }): Promise<HydratedDocument<Tdocument> | null> {
     return await this._model.findById(id, projection);
@@ -59,7 +59,7 @@ abstract class repoBase<Tdocument> {
     update,
     options,
   }: {
-    id: Schema.Types.ObjectId;
+    id: Schema.Types.ObjectId ;
     update: UpdateQuery<Tdocument>;
     options?: QueryOptions<Tdocument> | null;
   }): Promise<HydratedDocument<Tdocument> | null> {
@@ -89,7 +89,7 @@ abstract class repoBase<Tdocument> {
     options,
   }: {
     id: Schema.Types.ObjectId;
-    options: QueryOptions<Tdocument>;
+    options?: QueryOptions<Tdocument>;
   }) {
     return await this._model.findByIdAndDelete(id, options);
   }
@@ -101,7 +101,7 @@ abstract class repoBase<Tdocument> {
     filter: QueryFilter<Tdocument>;
     options?: QueryOptions<Tdocument>;
   }) {
-    return await this._model.deleteOne(filter as any);
+    return await this._model.deleteOne(filter);
   }
 
   async deleteMany({
@@ -128,44 +128,49 @@ abstract class repoBase<Tdocument> {
     return await this._model.findByIdAndDelete(id);
   }
 
-  async paginate({
-    page,
+  async paginate<T>({
     limit,
-    sort,
+    page,
     populate,
-    search,
+    search = {},
+    sort,
   }: {
+    limit: number;
     page: number;
-    limit?: number;
-    sort?: any;
     populate?: any;
-    search?: QueryFilter<Tdocument>;
+    sort?: any;
+    search?: QueryFilter<T>;
   }) {
-    ((page = page < 0 ? 1 : +page!),
-      (limit = limit && limit < 0 ? 2 : +limit!));
+    limit = !limit || limit < 0 ? 1 : Number(limit);
+    page = !page || page < 0 ? 2 : Number(page);
 
-    const skip = (page - 1) * limit;
+    let skip = (limit - 1) * page;
 
-    const [ data , totalDoc ]= await Promise.all(
-      (await this._model.find({ ...(search ?? {} ) }).skip(skip).limit(limit).populate(populate)).sort(sort),
-      this._model.countDocuments({...(search ?/ {})})
-    )
+    const [data, totalDoc]: [any, number] = await Promise.all([
+      this.findAll({
+        filter: { ...(search ?? {}) },
+        options: {
+          skip,
+          limit,
+          sort,
+          populate,
+        },
+      }),
+      this._model.countDocuments({ ...(search ?? {}) }),
+    ]);
 
-
-    const totalPages = Math.ceil(totalDoc/limit)
+    let totalPages = totalDoc / limit;
 
     return {
-    meta : {
-      currentPage : page , 
-      totalDoc,
-      totalPages,
-      limit
-    },
-    data 
+      meta: {
+        totalDoc,
+        currentPage: page,
+        totalPages,
+        limit,
+      },
+      data,
+    };
   }
-  }
-
-
 }
 
 export default repoBase;

@@ -6,7 +6,7 @@ class userRepo extends repoBase {
         super(_model);
         this._model = _model;
     }
-    async userEmailExists({ email, confirmed }) {
+    async userEmailExists({ email, confirmed, }) {
         return await this.findOne({
             filter: {
                 email,
@@ -15,4 +15,4 @@ class userRepo extends repoBase {
         });
     }
 }
-export default userRepo;
+export default new userRepo();

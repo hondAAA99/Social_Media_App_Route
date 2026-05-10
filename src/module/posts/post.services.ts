@@ -1,20 +1,28 @@
 import { NextFunction, Request, Response } from "express";
-import postModel from "../../DB/models/post.model.js";
+import postModel, { IPost } from "../../DB/models/post.model.js";
 import {
   ErrorConflict,
   ErrorInteralServerError,
+  ErrorUnAuthorizedRequest,
   SuccessResponse,
 } from "../../common/utils/globalresponse.js";
 import postRepo from "../../DB/repo/post.repo.js";
-import { createPostDTO } from "./post.dto.js";
+import { createPostDTO, updatePostDTO } from "./post.dto.js";
 import userRepo from "../../DB/repo/user.repo.js";
 import redisServices from "../../common/services/redis.services.js";
 import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 import s3Services from "../../common/services/s3Services.js";
 import { randomUUID } from "crypto";
-import { ObjectId, Schema, Types } from "mongoose";
+import {
+  HydratedDocument,
+  ObjectId,
+  QueryFilter,
+  Schema,
+  Types,
+} from "mongoose";
 import fireBaseServices from "../../common/services/fireBase.services.js";
 import availabiltyEnum from "../../common/enum/availablity.enum.js";
+import { IUser } from "../../DB/models/user.model.js";
 
 class postServices {
   private readonly _postModel = postRepo;
@@ -33,14 +41,14 @@ class postServices {
 
     const mentions: Schema.Types.ObjectId[] = [];
 
-    if (tags?.length) {
+    if ((tags! as Array<any>).length) {
       mentionsArr = await this._userModel.findAll({
         filter: {
           _id: { $in: tags },
         },
       });
 
-      if (mentionsArr && tags.length !== mentionsArr!.length) {
+      if (mentionsArr && (tags! as Array<any>).length !== mentionsArr!.length) {
         ErrorConflict("invalid tags");
       }
 
@@ -89,35 +97,210 @@ class postServices {
 
   getPosts = async (req: Request, res: Response, next: NextFunction) => {
     const posts = await this._postModel.paginate({
-      page: +req.body?.page,
-      limit: +req.body?.limit,
+      page: Number(req?.query?.page!),
+      limit: Number(req?.query?.limit!),
       search: {
         $or: [
-          postAvailbilty(req),
-          ...searchQuery
+          ...this.postAvailbilty(req),
+          {
+            availablity: availabiltyEnum.onlyMe,
+            createdBy: req?.user?.id!,
+            content: req?.query?.search
+              ? { $regex: req?.query?.search, options: "i" }
+              : {},
+          },
         ],
       },
     });
 
     // const posts = await this._postModel.findAll({
-    //   filter : {
-    //
-    // })
+    //   filter: {
+    //     $or: [
+    //       { availablity: availabiltyEnum.public },
+    //       { availablity: availabiltyEnum.onlyMe, createdBy: req?.user?.id! },
+    //       {
+    //         availablity: availabiltyEnum.freinds,
+    //         createdBy: { $in: [...(req?.user?.friends! || [])] },
+    //       },
+    //       { tags: { $in: [req?.user?.id] } },
+    //     ],
+    //   },
+    // });
+
+    SuccessResponse({ res, data: posts });
+  };
+
+  likePost = async (req: Request, res: Response, next: NextFunction) => {
+    const postId = req.params.postId;
+
+    const { flag } = req.query;
+
+    let queryFilter: QueryFilter<IPost> = {
+      $addToSet: { likes: req?.user?._id! },
+    };
+
+    if (flag == "disLike") {
+      queryFilter = {
+        $pull: { likes: req?.user?._id! },
+      };
+    }
+
+    const post = this._postModel.findOneAndUpdate({
+      filter: {
+        id: new Schema.Types.ObjectId(postId as string),
+        createdBy: new Schema.Types.ObjectId(req?.user?.id as string),
+      },
+      update: {
+        likes: queryFilter,
+      },
+    });
+
+    if (!post) {
+      ErrorInteralServerError("failed to like the post");
+    }
+
+    SuccessResponse({ res, data: "like!" });
+  };
+
+  postAvailbilty(req: Request) {
+    return [
+      {
+        availablity: availabiltyEnum.public,
+        content: req?.query?.search
+          ? {
+              $regex: req?.query?.search,
+               $options: "i",
+            }
+          : {},
+      },
+      {
+        availablity: availabiltyEnum.freinds,
+        createdBy: { $in: [...(req?.user?.friends! || [])] },
+        content: req?.query?.search
+          ? { $regex: req?.query?.search, $options: "i" }
+          : {},
+      },
+      {
+        tags: { $in: [req?.user?.id] },
+        content: req?.query?.search
+          ? { $regex: req?.query?.search,  $options: "i" }
+          : {},
+      },
+    ];
+  }
+
+  updatePost = async (req: Request, res: Response, next: NextFunction) => {
+    const { postId } = req.params;
+    const {
+      allowComment,
+      availability,
+      content,
+      tags,
+      removeFiles,
+      removeTags,
+    }: updatePostDTO = req.body;
+
+    const post = await this._postModel.findOne({
+      filter: {
+        _id: postId,
+        createdBy: req?.user?.id!,
+      },
+    });
+
+    if (!post) {
+      ErrorConflict("posy not found or not authorized");
+    }
+
+    if (removeFiles?.length) {
+      const inValidFiles = removeFiles.filter((file: string) => {
+        return !post?.attachments?.includes(file);
+      });
+
+      if (inValidFiles?.length) {
+        ErrorConflict("some of path file you want remove not exist");
+      }
+
+      await this._s3Service.deleteFiles({ Keys: removeFiles });
+
+      post!.attachments = post?.attachments?.filter((file: string) => {
+        return !removeFiles.includes(file);
+      }) as string[];
+    }
+
+    const updateTags = new Set(post?.tags?.map((id) => id.toString()));
+
+    (removeTags as Array<string>).forEach((tag: string) => {
+      return updateTags.delete(tag);
+    });
+
+    let fcms_token: string[] = [];
+    if ((tags as Array<string>).length!) {
+      const mentionsTags = await this._userModel.findAll({
+        filter: {
+          _id: { $in: tags },
+        },
+      });
+
+      if ((tags as Array<string>).length! !== mentionsTags!.length) {
+        ErrorConflict("some person you mentioned not found");
+      }
+
+      for (const tag of mentionsTags!) {
+        if (tag._id.toString() == req.user?._id.toString()) {
+          ErrorConflict("you can not mention tou your self");
+        }
+        updateTags.add(tag._id.toString());
+        (
+          await this._redisServices.getSet({
+            filter: req?.user?.email!,
+            subject: cacheKeyEnum.fcm,
+          })
+        ).map((token) => {
+          fcms_token.push(token);
+        });
+      }
+    }
+
+    post!.tags = [...updateTags].map(
+      (id: string) => new Schema.Types.ObjectId(id),
+    );
+
+    if (fcms_token?.length) {
+      await this._fireBase.sendNotifications({
+        tokens: fcms_token,
+      });
+    }
+
+    if (content) post!.content = content as string;
+    if (availability) post!.availablity = availability as string;
+    if (allowComment) post!.allowComments = allowComment as string;
+
+    await post!.save();
+
+    SuccessResponse({ res, data: " post updated" });
+  };
+
+  deletePost = async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    const { postId } = req.params;
+
+    await this._postModel.deleteOne({
+      filter: {
+        id: postId,
+        createdBy: user?.id!,
+      },
+    });
+
+    SuccessResponse({ res, data: "post deleted" });
   };
 }
 
-function postAvailbilty(req: Request) {
-  return [
-    { availablity: availabiltyEnum.onlyMe, createdBy: req?.user!.id },
-    {
-      availablity: availabiltyEnum.freinds,
-      tags: {
-        $in: [req?.user!.id, [...req?.user!.friends]],
-      },
-    },
-    { availablity: availabiltyEnum.public },
-    { tags: { $in: [req?.user!.id] } },
-  ];
-}
-
 export default new postServices();
+
+// if (data?.tags && (data.tags as Array<any>).includes(data.createdBy)) {
+// ctx.addIssue({
+// code: "custom",
+// path: ["content"],
+// message: "you cannot tag your self in that post",
+// });
+// }

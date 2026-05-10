@@ -31,7 +31,7 @@ class s3services {
         }){
         const command = new PutObjectCommand({
             Bucket : AWS_S3_BUCKET_NAME,
-            Key : `${APPLICATION_NAME}/${path}/${Date.now()}/${Math.random()}/${file.originalname}`,
+            Key : `${path}/${Date.now()}/${Math.random()}/${file.originalname}`,
             ACL ,
             Body : (storageType == multerStorageEnum.memory ) ?  file.buffer : fs.createReadStream(file.path),
         })

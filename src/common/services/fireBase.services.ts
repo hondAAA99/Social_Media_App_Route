@@ -1,15 +1,23 @@
 import admin from "firebase-admin";
 import { resolve } from "path";
+import { readFileSync } from "fs";
 
 class fireBaseServices {
   private readonly _client: admin.app.App;
   constructor() {
     const path = JSON.parse(
-      resolve("social-media-app-66b81-firebase-adminsdk-fbsvc-9b5231dc47.json"),
-    ) as unknown as string;
+      readFileSync(
+        resolve(
+          "src/config/social-media-app-66b81-firebase-adminsdk-fbsvc-c1dbd34a46.json",
+        ),
+        "utf-8",
+      ),
+    );
     this._client = admin.initializeApp({
       credential: admin.credential.cert(path),
     });
+
+    console.log("connected to fireBase");
   }
 
   async sendNotification({
@@ -31,8 +39,8 @@ class fireBaseServices {
 
     await Promise.all(
       tokens.map((token) => {
-        const message = { token , data }
-        this.sendNotification({token , data })
+        const message = { token, data };
+        this.sendNotification({ token, data });
       }),
     );
   }

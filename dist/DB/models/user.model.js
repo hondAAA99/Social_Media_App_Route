@@ -13,7 +13,7 @@ const userSchema = new Schema({
                 return true;
             else
                 return false;
-        }
+        },
     },
     role: {
         type: String,
@@ -32,7 +32,7 @@ const userSchema = new Schema({
                 return true;
             else
                 return false;
-        }
+        },
     },
     age: {
         type: String,
@@ -41,7 +41,7 @@ const userSchema = new Schema({
                 return true;
             else
                 return false;
-        }
+        },
     },
     confirmed: { type: Boolean, required: true, default: false },
     provider: {
@@ -51,7 +51,8 @@ const userSchema = new Schema({
     },
     profilePicture: { type: String },
     creadnatials: { type: Date },
-    deletedAt: { type: Date }
+    deletedAt: { type: Date },
+    friends: { type: [Schema.Types.ObjectId] },
 }, {
     timestamps: true,
     strictQuery: true,
@@ -68,6 +69,26 @@ userSchema
 })
     .get(function () {
     return this.firstName + " " + this.lastName;
+});
+userSchema.pre(["findOne", "find"], function () {
+    const { paranoid, ...rest } = this.getQuery();
+    if (paranoid == true) {
+        this.setQuery({ deleteAt: { $exists: false }, rest });
+    }
+    else
+        this.setQuery({ rest });
+});
+userSchema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], async function () {
+    const condition = this.getQuery();
+    const userId = condition._id;
+    await Promise.all([
+        mongoose.models.posts.deleteMany({
+            createdBy: userId,
+        }),
+        mongoose.models.comments.deleteMany({
+            createdBy: userId,
+        }),
+    ]);
 });
 const userModel = mongoose.models.users || model("users", userSchema);
 export default userModel;

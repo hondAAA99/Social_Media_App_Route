@@ -38,11 +38,38 @@ class repoBase {
     async deleteOne({ filter, options, }) {
         return await this._model.deleteOne(filter);
     }
-    async deleteMany({ filter, options, paranoid = false }) {
+    async deleteMany({ filter, options, paranoid = false, }) {
         return await this._model.deleteMany(filter);
     }
-    async deleteById({ id, options, paranoid = false }) {
+    async deleteById({ id, options, paranoid = false, }) {
         return await this._model.findByIdAndDelete(id);
+    }
+    async paginate({ limit, page, populate, search = {}, sort, }) {
+        limit = !limit || limit < 0 ? 1 : Number(limit);
+        page = !page || page < 0 ? 2 : Number(page);
+        let skip = (limit - 1) * page;
+        const [data, totalDoc] = await Promise.all([
+            this.findAll({
+                filter: { ...(search ?? {}) },
+                options: {
+                    skip,
+                    limit,
+                    sort,
+                    populate,
+                },
+            }),
+            this._model.countDocuments({ ...(search ?? {}) }),
+        ]);
+        let totalPages = totalDoc / limit;
+        return {
+            meta: {
+                totalDoc,
+                currentPage: page,
+                totalPages,
+                limit,
+            },
+            data,
+        };
     }
 }
 export default repoBase;

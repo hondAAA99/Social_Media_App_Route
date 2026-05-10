@@ -20,7 +20,7 @@ export async function authenticate(req, res, next) {
         return Errorforbidden('invalid token');
     })();
     const verify = accessTokenVerify({ token, secret });
-    const user = await new userRepo().findById({
+    const user = await userRepo.findById({
         id: verify.data.userId,
     });
     if (!user)

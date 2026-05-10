@@ -4,15 +4,17 @@ import userServices from "./user.services.js";
 import { updatePasswordSchema } from "./user.Schema.js";
 import { validationMiddleWare } from "../../common/middleware/validation.js";
 
-export const userRouter : Router = Router();
-
-
+export const userRouter: Router = Router();
 
 userRouter.patch(
   "/update-password",
   validationMiddleWare(updatePasswordSchema),
   authenticate,
-  userServices.updatePassword
+  userServices.updatePassword,
 );
 
-userRouter.get("/log-out", authenticate ,userServices.logout);
+userRouter.get("/share-user/:userId", userServices.shareUser);
+userRouter.put("/update-profile", authenticate, userServices.updateProfile);
+userRouter.delete("/delete-user", authenticate, userServices.deleteUser);
+
+userRouter.get("/log-out", authenticate, userServices.logout);

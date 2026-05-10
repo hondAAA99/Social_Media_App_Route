@@ -4,6 +4,9 @@ import { signUpSchema, signInSchema, confirmSignUpSchema, forgetPassword, resetP
 import { validationMiddleWare } from "../../common/middleware/validation.js";
 import { authenticate } from "../../common/middleware/authenticate.js";
 export const authRouter = Router();
+
+
+
 authRouter.post("/sign-up", validationMiddleWare(signUpSchema), auth.signUp);
 authRouter.post("/confirm-sign-up", validationMiddleWare(confirmSignUpSchema), auth.confirmMail);
 authRouter.post("/log-in", validationMiddleWare(signInSchema), auth.logIn);

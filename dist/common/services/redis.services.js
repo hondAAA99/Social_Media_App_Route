@@ -12,23 +12,25 @@ class redisService {
     }
     async connect() {
         await this._client.connect();
-        console.log('connected to redis succeded');
+        console.log("connected to redis succeded");
     }
     eventHandler() {
-        this._client.on('error', () => {
-            ErrorInteralServerError('connection to redis failed');
+        this._client.on("error", () => {
+            ErrorInteralServerError("connection to redis failed");
         });
     }
     async keyExists({ key }) {
         return await this._client.exists(key);
     }
-    cacheKey({ filter, subject, }) {
+    cacheKey({ filter, subject }) {
         return `${subject}::${filter}`;
     }
     async setKey({ key, value, ttl = 60, }) {
         try {
             value =
-                typeof value == string ? value : JSON.stringify(value, null, 2);
+                typeof value == string
+                    ? value
+                    : JSON.stringify(value, null, 2);
             return await this._client.set(key, value, { EX: ttl });
         }
         catch (err) {
@@ -49,7 +51,7 @@ class redisService {
             }
         }
         catch (err) {
-            ErrorInteralServerError('failed to get the value from cache');
+            ErrorInteralServerError("failed to get the value from cache");
         }
     }
     async getAllKeys(pattern) {
@@ -92,6 +94,30 @@ class redisService {
         catch (err) {
             ErrorInteralServerError(err);
         }
+    }
+    async addSet({ filter, subject }, members) {
+        return await this._client.sAdd(this.cacheKey({
+            filter,
+            subject
+        }), members);
+    }
+    async getSet({ filter, subject }) {
+        return await this._client.sMembers(this.cacheKey({
+            filter,
+            subject
+        }));
+    }
+    async deleteSet({ filter, subject }, members) {
+        return await this._client.sRem(this.cacheKey({
+            filter,
+            subject
+        }), members);
+    }
+    async existsSet({ filter, subject }) {
+        return await this._client.sCard(this.cacheKey({
+            filter,
+            subject
+        }));
     }
 }
 export default new redisService();

@@ -1,4 +1,4 @@
-import type { Request,Response,NextFunction } from "express"
+import type { Request, Response, NextFunction } from "express";
 import userRepo from "../../DB/repo/user.repo.js";
 import {
   ErrorUnAuthorizedRequest,
@@ -6,19 +6,105 @@ import {
 } from "../../common/utils/globalresponse.js";
 import redisServices from "../../common/services/redis.services.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
-import { HydratedDocument } from "mongoose";
+import { HydratedDocument, Schema } from "mongoose";
 import { IUser } from "../../DB/models/user.model.js";
 import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 import s3Services from "../../common/services/s3Services.js";
-import {pipeline} from 'stream/promises'
+import { pipeline } from "stream/promises";
+import postRepo from "../../DB/repo/post.repo.js";
+import { Globalencrypt } from "../../common/security/encrypt.js";
 
 class userServices {
   private readonly _userModel = userRepo;
   private readonly _redisServices = redisServices;
   private readonly _s3services = s3Services;
-
+  private readonly _postModel = postRepo;
 
   constructor() {}
+
+  shareUser = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.userId;
+    const user = this._userModel.findById({
+      id: userId,
+      projection: "userName email profilePicture friends",
+    });
+
+    const posts = this._postModel.findAll({
+      filter: { createdBy: userId },
+    });
+
+    // const comments = this._postModel.findAll({
+    //   filter: { createdBy: userId },
+    // });
+
+    SuccessResponse({ res, data: { user, posts } });
+  };
+
+  // id?: Schema.Types.ObjectId;
+  //   firstName: string;
+  //   lastName: string;
+  //   userName: string;
+  //   email: string;
+  //   password: string;
+  //   role?: string;
+  //   age?: number;
+  //   gender?: string;
+  //   createdAt: Date;
+  //   updatedAt: Date;
+  //   phone?: string;
+  //   confirmed?: boolean | undefined;
+  //   provider?: string;
+  //   creadnatials?: Date;
+  //   deletedAt?: Date;
+  //   profilePicture?: string;
+  //   friends: Schema.Types.ObjectId[];
+
+  updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+    const { firstName, lastName, age, gender, phone } : IUser = req.body;
+    const { user } = req.body;
+    if (firstName) {
+      await this._userModel.findByIdAndUpdate({
+        id: user?.id,
+        update: {
+          firstName,
+        },
+      });
+    }
+    if (lastName) {
+      await this._userModel.findByIdAndUpdate({
+        id: user?.id,
+        update: {
+          lastName,
+        },
+      });
+    }
+    if (age) {
+      await this._userModel.findByIdAndUpdate({
+        id: user?.id,
+        update: {
+          age,
+        },
+      });
+    }
+    if (gender) {
+      await this._userModel.findByIdAndUpdate({
+        id: user?.id,
+        update: {
+          gender,
+        },
+      });
+    }
+    if (phone) {
+      await this._userModel.findByIdAndUpdate({
+        id: user?.id,
+        update: {
+          phone: Globalencrypt({plainText : phone}),
+        },
+      });
+    }
+
+    SuccessResponse({ res, data: "user updated" });
+  };
 
   updatePassword = async (req: Request, res: Response, next: NextFunction) => {
     const { oldPassword, newPassword } = req.body;
@@ -33,12 +119,21 @@ class userServices {
     });
 
     SuccessResponse({ res, data: "password updated" });
-  }
+  };
+
+  deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    await this._userModel.findByIdAndDelete({
+      id: user!.id,
+    });
+
+    SuccessResponse({res,data : 'user deleted'})
+  };
 
   logout = async (req: Request, res: Response, next: NextFunction) => {
-    const {flag} = req.query;
-    const user : HydratedDocument<IUser> = req.user as HydratedDocument<IUser>
-    if (flag == 'all'){
+    const { flag } = req.query;
+    const user: HydratedDocument<IUser> = req.user as HydratedDocument<IUser>;
+    if (flag == "all") {
       user.creadnatials = new Date(Date.now());
       user.save();
       // await this._redisServices.deleteKey({
@@ -47,14 +142,17 @@ class userServices {
       // SuccessResponse({res ,data : "logout succeded from all devices"})
     }
     await this._redisServices.setKey({
-      key : this._redisServices.cacheKey({filter : req.token as string , subject : cacheKeyEnum.revokeToken }),
-      value : user.email,
-      ttl :  (Date.now() - req.tokenDecoded.iat!*1000)
-    })
-    SuccessResponse({res ,data : "logout succeded"})
-  }
+      key: this._redisServices.cacheKey({
+        filter: req.token as string,
+        subject: cacheKeyEnum.revokeToken,
+      }),
+      value: user.email,
+      ttl: Date.now() - req.tokenDecoded.iat! * 1000,
+    });
+    SuccessResponse({ res, data: "logout succeded" });
+  };
 
-    // uploadFile = async(req: Request, res: Response, next: NextFunction)=>{}
+  // uploadFile = async(req: Request, res: Response, next: NextFunction)=>{}
 
   // uploadLargeFile = async(req: Request, res: Response, next: NextFunction)=>{}
 
@@ -128,9 +226,6 @@ class userServices {
     const result = await this._s3services.deleteFolder({ folderKey });
     SuccessResponse({ res, data: result });
   };
-
-
-
 }
 
-export default new userServices() ;
+export default new userServices();

@@ -32,7 +32,7 @@ import redisServices from "../services/redis.services.js";
     const verify: jsonwebtoken.JwtPayload = accessTokenVerify(
       {token , secret },
     ) as jsonwebtoken.JwtPayload;
-    const user : HydratedDocument<IUser> | null = await new userRepo().findById({
+    const user : HydratedDocument<IUser> | null = await userRepo.findById({
       id : verify.data.userId ,
     })
     if (!user) ErrorConflict('user does not exists')

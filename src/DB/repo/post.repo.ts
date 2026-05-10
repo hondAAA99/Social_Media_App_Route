@@ -3,7 +3,7 @@
 import postModel, { IPost } from "../models/post.model.js";
 
   class postRepo extends repoBase<IPost> {
-  constructor(protected readonly _model: Model<IPost | any> = postModel) {
+  constructor(protected readonly _model: Model<IPost> = postModel) {
     super(_model);
   }
   }

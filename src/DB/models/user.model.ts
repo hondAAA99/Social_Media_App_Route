@@ -2,7 +2,6 @@ import mongoose, { model, Schema } from "mongoose";
 import roleEnum from "../../common/enum/role.enum.js";
 import genderEnum from "../../common/enum/gender.enum.js";
 import providerEnum from "../../common/enum/provider.enum.js";
-import { Globalhash } from "../../common/security/hash.js";
 
 export interface IUser {
   id?: Schema.Types.ObjectId;
@@ -98,6 +97,22 @@ userSchema.pre(["findOne", "find"], function () {
     this.setQuery({ deleteAt: { $exists: false }, rest });
   } else this.setQuery({ rest });
 });
+
+userSchema.pre(
+  ["deleteMany", "deleteOne", "findOneAndDelete"],
+  async function () {
+    const condition = this.getQuery();
+    const userId = condition._id;
+    await Promise.all([
+      mongoose.models.posts!.deleteMany({
+        createdBy: userId,
+      }),
+      mongoose.models.comments!.deleteMany({
+        createdBy: userId,
+      }),
+    ]);
+  },
+);
 
 const userModel = mongoose.models.users || model("users", userSchema);
 
