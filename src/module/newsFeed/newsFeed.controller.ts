@@ -4,6 +4,6 @@ import newFeedSevices from "./newFeed.sevices.js";
 
 const newsFeedRouter: Router = Router();
 
-newsFeedRouter.get("get-feed", authenticate, newFeedSevices.getFeed);
+newsFeedRouter.get("/get-feed", authenticate, newFeedSevices.getFeed);
 
 export default newsFeedRouter;
