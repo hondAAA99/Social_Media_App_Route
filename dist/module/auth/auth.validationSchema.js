@@ -24,6 +24,7 @@ export const signInSchema = {
     body: zod.object({
         email: zod.email(),
         password: zod.string(),
+        fcm: zod.string()
     }),
 };
 export const confirmSignUpSchema = {
@@ -35,12 +36,17 @@ export const confirmSignUpSchema = {
 export const forgetPassword = {
     body: zod.object({
         email: zod.email(),
-    })
+    }),
 };
 export const resetPassowrd = {
     body: zod.object({
         email: zod.email(),
         newPassword: zod.string(),
         otp: zod.string().length(5),
+    }),
+};
+export const resendOtp = {
+    body: zod.object({
+        email: zod.email(),
     }),
 };

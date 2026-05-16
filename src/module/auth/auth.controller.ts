@@ -1,21 +1,41 @@
 import auth from "./auth.services.js";
 import { Router } from "express";
-import { signUpSchema, signInSchema, confirmSignUpSchema, forgetPassword, resetPassowrd } from "./auth.validationSchema.js";
+import {
+  signUpSchema,
+  signInSchema,
+  confirmSignUpSchema,
+  forgetPassword,
+  resetPassowrd,
+  confirmLoginSchema,
+} from "./auth.validationSchema.js";
 import { validationMiddleWare } from "../../common/middleware/validation.js";
-import { authenticate } from "../../common/middleware/authenticate.js";
 
 export const authRouter: Router = Router();
 
 authRouter.post("/sign-up", validationMiddleWare(signUpSchema), auth.signUp);
+
 authRouter.post(
   "/confirm-sign-up",
   validationMiddleWare(confirmSignUpSchema),
-  auth.confirmMail,
+  auth.confirmMailAndEnaaleTwoStepVeffiction,
 );
+
+authRouter.post(
+  "/confirm-sign-up",
+  validationMiddleWare(confirmLoginSchema),
+  auth.confirmLogin,
+);
+
 authRouter.post("/log-in", validationMiddleWare(signInSchema), auth.logIn);
-authRouter.post('/resend-otp',auth.reSendOtp)
+
+authRouter.post(
+  "/resend-otp",
+  validationMiddleWare(resetPassowrd),
+  auth.reSendOtp,
+);
+
 authRouter.post("/sign-with-google", auth.signUpAndLoginWithGmail);
-authRouter.post("/get-profile",authenticate, auth.getProfile);
+
 authRouter.put(
   "/forget-password",
   validationMiddleWare(forgetPassword),

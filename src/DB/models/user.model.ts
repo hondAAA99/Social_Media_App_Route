@@ -2,38 +2,47 @@ import mongoose, { model, Schema } from "mongoose";
 import roleEnum from "../../common/enum/role.enum.js";
 import genderEnum from "../../common/enum/gender.enum.js";
 import providerEnum from "../../common/enum/provider.enum.js";
+import availabiltyEnum from "../../common/enum/availablity.enum.js";
 
 export interface IUser {
   id?: Schema.Types.ObjectId;
   firstName: string;
   lastName: string;
   userName: string;
-  email: string;
-  password: string;
+  email: { data: string; availibilty: string };
+  profilePicture?: { data: string; availibilty: string };
+  friends: { data: Schema.Types.ObjectId[]; availibilty: string };
+  phone?: { data: string; availibilty: string };
+  age?: { data: Date; availibilty: string };
+  gender?: { data: string; availibilty: string };
   role?: string;
-  age?: number;
-  gender?: string;
+  password: string;
   createdAt: Date;
   updatedAt: Date;
-  phone?: string;
   confirmed?: boolean | undefined;
   provider?: string;
-  creadnatials?: Date;
   deletedAt?: Date;
-  profilePicture?: string;
-  friends: Schema.Types.ObjectId[];
+  twoStepVerfiction: boolean;
+  creadnatials?: Date;
 }
 
 const userSchema = new Schema<IUser>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: {
+      type: new Schema({
+        data: { type: String },
+        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+      }),
+      required: true,
+      unique: true,
+      default: { data: "", availibilty: availabiltyEnum.onlyMe },
+    },
     password: {
       type: String,
-      required: function (): boolean {
-        if (this.provider == providerEnum.system) return true;
-        else return false;
+      required: function (this: any): boolean {
+        return this.provider === providerEnum.system;
       },
     },
     role: {
@@ -42,34 +51,77 @@ const userSchema = new Schema<IUser>(
       enum: Object.values(roleEnum),
     },
     gender: {
-      type: String,
-      default: genderEnum.male,
-      enum: Object.values(genderEnum),
+      type: new Schema({
+        data: {
+          type: String,
+          enum: Object.values(genderEnum),
+          default: genderEnum.preferNotToSay,
+        },
+        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+      }),
+      default: {
+        data: genderEnum.preferNotToSay,
+        availibilty: availabiltyEnum.onlyMe,
+      },
     },
     phone: {
-      type: String,
-      required: function (): boolean {
-        if (this.provider == providerEnum.system) return true;
-        else return false;
+      type: new Schema({
+        data: { type: String },
+        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+      }),
+      default: {
+        data: "",
+        availibilty: availabiltyEnum.onlyMe,
+      },
+      required: function (this: any): boolean {
+        return this.provider === providerEnum.system;
       },
     },
     age: {
-      type: String,
-      required: function (): boolean {
-        if (this.provider == providerEnum.system) return true;
-        else return false;
+      type: new Schema({
+        data: { type: Date },
+        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+      }),
+      default: {
+        data: undefined,
+        availibilty: availabiltyEnum.onlyMe,
+      },
+      required: function (this: any): boolean {
+        return this.provider === providerEnum.system;
       },
     },
-    confirmed: { type: Boolean, required: true, default: false },
+    confirmed: { type: Boolean, default: false },
     provider: {
       type: String,
-      enum: Object.values(providerEnum),
       default: providerEnum.system,
+      enum: Object.values(providerEnum),
     },
-    profilePicture: { type: String },
+    profilePicture: {
+      type: new Schema({
+        data: { type: String },
+        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+      }),
+      default: {
+        data: undefined,
+        availibilty: availabiltyEnum.public,
+      },
+      required: function (this: any): boolean {
+        return this.provider === providerEnum.system;
+      },
+    },
     creadnatials: { type: Date },
     deletedAt: { type: Date },
-    friends: { type: [Schema.Types.ObjectId] },
+    friends: {
+      type: new Schema({
+        data: [{ type: Schema.Types.ObjectId, ref: "users" }],
+        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+      }),
+      default: {
+        data: undefined,
+        availibilty: availabiltyEnum.public,
+      },
+    },
+    twoStepVerfiction: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -87,15 +139,18 @@ userSchema
     this.firstName = fn;
     this.lastName = ln;
   })
-  .get(function () {
+  .get(function (this) {
     return this.firstName + " " + this.lastName;
   });
 
 userSchema.pre(["findOne", "find"], function () {
-  const { paranoid, ...rest } = this.getQuery();
-  if (paranoid == true) {
-    this.setQuery({ deleteAt: { $exists: false }, rest });
-  } else this.setQuery({ rest });
+  const query = this.getQuery();
+  const { paranoid, ...rest } = query;
+  if (paranoid === true) {
+    this.setQuery({ deletedAt: { $exists: false }, ...rest });
+  } else {
+    this.setQuery({ ...rest });
+  }
 });
 
 userSchema.pre(
@@ -104,12 +159,21 @@ userSchema.pre(
     const condition = this.getQuery();
     const userId = condition._id;
     await Promise.all([
-      mongoose.models.posts!.deleteMany({
-        createdBy: userId,
+      mongoose.models.users!.findByIdAndUpdate(userId, {
+        deletedAt: Date.now(),
       }),
-      mongoose.models.comments!.deleteMany({
-        createdBy: userId,
-      }),
+      mongoose.models.posts!.findOneAndUpdate(
+        {
+          createdBy: userId,
+        },
+        { deletedAt: Date.now() },
+      ),
+      mongoose.models.comments!.findOneAndUpdate(
+        {
+          createdBy: userId,
+        },
+        { deletedAt: Date.now() },
+      ),
     ]);
   },
 );

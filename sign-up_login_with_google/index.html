@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Saraha - Secure messaging and user management platform"
+    />
+    <meta name="theme-color" content="#0284c7" />
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https:; font-src 'self'; connect-src 'self' http://localhost:5000 https://accounts.google.com;"
+    />
+
+    <title>Saraha - Secure Messaging Platform</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

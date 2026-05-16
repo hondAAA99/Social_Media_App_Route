@@ -1,6 +1,6 @@
 import repoBase from "./repo.base.js";
 import userModel from "../models/user.model.js";
-class userRepo extends repoBase {
+class new userRepo() extends repoBase {
     _model;
     constructor(_model = userModel) {
         super(_model);
@@ -15,4 +15,4 @@ class userRepo extends repoBase {
         });
     }
 }
-export default new userRepo();
+export default new new userRepo()();

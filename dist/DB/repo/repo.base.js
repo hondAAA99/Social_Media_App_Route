@@ -41,9 +41,6 @@ class repoBase {
     async deleteMany({ filter, options, paranoid = false, }) {
         return await this._model.deleteMany(filter);
     }
-    async deleteById({ id, options, paranoid = false, }) {
-        return await this._model.findByIdAndDelete(id);
-    }
     async paginate({ limit, page, populate, search = {}, sort, }) {
         limit = !limit || limit < 0 ? 1 : Number(limit);
         page = !page || page < 0 ? 2 : Number(page);

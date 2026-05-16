@@ -9,8 +9,12 @@ import {
 } from "./post.schema.js";
 import postServices from "./post.services.js";
 import { authenticate } from "../../common/middleware/authenticate.js";
+import commentRouter from "../comment/comment.controller.js";
 
 const postRouter: Router = Router();
+
+postRouter.use("/:postId/comments{/commentReplay/:commentId}", commentRouter);
+
 postRouter.post(
   "/create-post",
   fileUpload({ fileType: multerFileEnum.image }).array("attachments"),
@@ -27,7 +31,6 @@ postRouter.get(
   authenticate,
   postServices.likePost,
 );
-
 
 postRouter.patch(
   "/update-post/:postId",

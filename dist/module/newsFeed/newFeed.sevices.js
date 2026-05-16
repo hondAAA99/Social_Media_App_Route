@@ -1,10 +1,10 @@
 import { ErrorConflict, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import postRepo from "../../DB/repo/post.repo.js";
-import userRepo from "../../DB/repo/user.repo.js";
+import new postRepo() from "../../DB/repo/post.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import postServices from "../posts/post.services.js";
 class newsFeed {
-    _userModel = userRepo;
-    _postModel = postRepo;
+    _userModel = new userRepo();
+    _postModel = new postRepo();
     _postServices = postServices;
     constructor() { }
     getFeed = async (req, res, next) => {

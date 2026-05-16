@@ -28,7 +28,6 @@ const bootstrap = async () => {
   app.use("/auth", authRouter);
   app.use("/users", userRouter);
   app.use("/posts", postRouter);
-  app.use("/comments", commentRouter);
   app.use("/news-feed", newsFeedRouter);
   
   app.all("{/*demo}", (req: Request, res: Response, next: NextFunction) => {

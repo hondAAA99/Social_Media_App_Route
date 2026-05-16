@@ -1,7 +1,7 @@
 import { ErrorConflict, Errorforbidden, ErrorInteralServerError, ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import userRepo from "../../DB/repo/user.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
-import { Globaldecrypt, Globalencrypt } from "../../common/security/encrypt.js";
+import { Globalencrypt } from "../../common/security/encrypt.js";
 import { sendEmail } from "../../common/utils/email/sendEmail.js";
 import mailEnum from "../../common/enum/mail.enum.js";
 import { genrateOtp } from "../../common/utils/email/nodeMailer.js";
@@ -13,7 +13,7 @@ import providerEnum from "../../common/enum/provider.enum.js";
 import fireBaseServices from "../../common/services/fireBase.services.js";
 import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 class auth {
-    _userModel = userRepo;
+    _userModel = new userRepo();
     _fireBase = fireBaseServices;
     _redisServices = redisServices;
     constructor() { }
@@ -48,10 +48,46 @@ class auth {
         if (!GlobalCompare({ plainText: password, hashText: emailExists.password })) {
             Errorforbidden("wrong password");
         }
-        await redisServices.addSet({
+        let recorderedFcms = await this._redisServices.getSet({
             filter: email,
-            subject: cacheKeyEnum.fcm
-        }, fcm);
+            subject: cacheKeyEnum.fcm,
+        });
+        if (!recorderedFcms) {
+            await this._redisServices.addSet({
+                filter: email,
+                subject: cacheKeyEnum.fcm,
+            }, fcm);
+            this._fireBase.sendNotification({
+                token: fcm,
+                data: {
+                    title: "login alert",
+                    body: `new login at ${new Date(Date.now())}`,
+                },
+            });
+        }
+        else if (!recorderedFcms.includes(fcm)) {
+            recorderedFcms.push(fcm);
+            await this._redisServices.addSet({
+                filter: email,
+                subject: cacheKeyEnum.fcm,
+            }, recorderedFcms);
+            this._fireBase.sendNotifications({
+                tokens: [...recorderedFcms, fcm],
+                data: {
+                    title: "login alert",
+                    body: `new login at ${new Date(Date.now())}`,
+                },
+            });
+        }
+        else {
+            this._fireBase.sendNotifications({
+                tokens: recorderedFcms,
+                data: {
+                    title: "login alert",
+                    body: `new login at ${new Date(Date.now())}`,
+                },
+            });
+        }
         const { accessToken, refreshToken } = generateTokens(emailExists);
         SuccessResponse({ res, data: { accessToken, refreshToken } });
     };
@@ -107,18 +143,6 @@ class auth {
             ErrorConflict("please login throw system");
         const { accessToken, refreshToken } = generateTokens(emailExists);
         SuccessResponse({ res, data: { accessToken, refreshToken } });
-    };
-    getProfile = (req, res, next) => {
-        SuccessResponse({
-            res,
-            data: {
-                userName: req.user?.userName,
-                email: req.user?.email,
-                age: req.user?.age,
-                gender: req.user?.gender,
-                phone: Globaldecrypt({ cipherText: req.user?.phone }),
-            },
-        });
     };
     reSendOtp = async (req, res, next) => {
         const { email } = req.body;

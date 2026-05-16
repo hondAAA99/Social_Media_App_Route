@@ -36,19 +36,25 @@ abstract class repoBase<Tdocument> {
   async findOne({
     filter,
     projection,
+    options,
   }: {
     filter: QueryFilter<Tdocument>;
     projection?: ProjectionType<Tdocument> | null;
     options?: QueryOptions<Tdocument>;
   }): Promise<HydratedDocument<Tdocument> | null> {
-    return await this._model.findOne(filter, projection);
+    return await this._model
+      .findOne(filter, projection)
+      .skip(options?.skip!)
+      .limit(options?.limit!)
+      .sort(options?.sort)
+      .populate(options?.populate as PopulateOptions);
   }
 
   async findById({
     id,
     projection,
   }: {
-    id: Schema.Types.ObjectId | any ;
+    id: Schema.Types.ObjectId | any;
     projection?: ProjectionType<Tdocument> | null | undefined;
   }): Promise<HydratedDocument<Tdocument> | null> {
     return await this._model.findById(id, projection);
@@ -59,7 +65,7 @@ abstract class repoBase<Tdocument> {
     update,
     options,
   }: {
-    id: Schema.Types.ObjectId ;
+    id: Schema.Types.ObjectId;
     update: UpdateQuery<Tdocument>;
     options?: QueryOptions<Tdocument> | null;
   }): Promise<HydratedDocument<Tdocument> | null> {
@@ -114,18 +120,6 @@ abstract class repoBase<Tdocument> {
     paranoid: Boolean;
   }) {
     return await this._model.deleteMany(filter);
-  }
-
-  async deleteById({
-    id,
-    options,
-    paranoid = false,
-  }: {
-    id: Schema.Types.ObjectId;
-    options?: QueryOptions<Tdocument>;
-    paranoid: Boolean;
-  }) {
-    return await this._model.findByIdAndDelete(id);
   }
 
   async paginate<T>({

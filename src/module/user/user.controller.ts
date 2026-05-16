@@ -13,7 +13,7 @@ userRouter.patch(
   userServices.updatePassword,
 );
 
-userRouter.get("/share-user/:userId", userServices.shareUser);
+userRouter.get("/share-user/:userId", userServices.getUserSharedData);
 userRouter.put("/update-profile", authenticate, userServices.updateProfile);
 userRouter.delete("/delete-user", authenticate, userServices.deleteUser);
 

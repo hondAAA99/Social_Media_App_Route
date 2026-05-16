@@ -1,5 +1,5 @@
 import { ErrorConflict, Errorforbidden, ErrorInteralServerError, ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import userRepo from "../../DB/repo/user.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
 import { Globaldecrypt, Globalencrypt } from "../../common/security/encrypt.js";
 import { sendEmail } from "../../common/utils/email/sendEmail.js";
@@ -11,7 +11,7 @@ import { O2AUTH_CLIENT_ID } from "../../config/config.services.js";
 import { OAuth2Client } from "google-auth-library";
 import providerEnum from "../../common/enum/provider.enum.js";
 class auth {
-    _userModel = new userRepo();
+    _userModel = new new userRepo()();
     constructor() { }
     signUp = async (req, res, next) => {
         const { userName, email, password, phone, gender, } = req.body;

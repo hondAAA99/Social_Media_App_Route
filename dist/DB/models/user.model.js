@@ -22,7 +22,7 @@ const userSchema = new Schema({
     },
     gender: {
         type: String,
-        default: genderEnum.male,
+        default: genderEnum.preferNotToSay,
         enum: Object.values(genderEnum),
     },
     phone: {
@@ -36,6 +36,7 @@ const userSchema = new Schema({
     },
     age: {
         type: String,
+        min: 12,
         required: function () {
             if (this.provider == providerEnum.system)
                 return true;
@@ -43,7 +44,7 @@ const userSchema = new Schema({
                 return false;
         },
     },
-    confirmed: { type: Boolean, required: true, default: false },
+    confirmed: { type: Boolean, default: false },
     provider: {
         type: String,
         enum: Object.values(providerEnum),
@@ -82,12 +83,15 @@ userSchema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], async function (
     const condition = this.getQuery();
     const userId = condition._id;
     await Promise.all([
-        mongoose.models.posts.deleteMany({
-            createdBy: userId,
+        mongoose.models.users.findByIdAndUpdate(userId, {
+            deletedAt: Date.now(),
         }),
-        mongoose.models.comments.deleteMany({
+        mongoose.models.posts.findOneAndUpdate({
             createdBy: userId,
-        }),
+        }, { deletedAt: Date.now() }),
+        mongoose.models.comments.findOneAndUpdate({
+            createdBy: userId,
+        }, { deletedAt: Date.now() }),
     ]);
 });
 const userModel = mongoose.models.users || model("users", userSchema);

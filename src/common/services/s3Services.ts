@@ -84,7 +84,7 @@ class s3services {
         ACL? : ObjectCannedACL,
         path? : string | undefined,
         fileSize? : number
-        }): Promise<string[] | any>{
+        }): Promise<string[] | any >{
             if (fileSize < 5*1024*1024){
                 const urls =  await Promise.all(
                     files.map((file : Express.Multer.File)=>{this.uploadFile({file,storageType,path})}
@@ -186,4 +186,4 @@ class s3services {
     }
 }
 
-export default new s3services()
+export default s3services;

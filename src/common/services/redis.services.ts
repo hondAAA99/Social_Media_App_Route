@@ -138,4 +138,4 @@ class redisService {
   }
 }
 
-export default new redisService();
+export default  redisService;

@@ -3,7 +3,7 @@ import { SECRET_ADMIN_ACCESS_TOKEN, SECRET_USER_ACCESS_TOKEN, TOKEN_ADMIN_PREFIX
 import { ErrorConflict, Errorforbidden, ErrorUnAuthorizedRequest } from "../utils/globalresponse.js";
 import { accessTokenVerify } from "../security/jsonWebTokens.js";
 import jsonwebtoken from "jsonwebtoken";
-import userRepo from "../../DB/repo/user.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import { HydratedDocument } from "mongoose";
 import { IUser } from "../../DB/models/user.model.js";
 import cacheKeyEnum from "../enum/cacheKey.enum.js";
@@ -32,7 +32,7 @@ import redisServices from "../services/redis.services.js";
     const verify: jsonwebtoken.JwtPayload = accessTokenVerify(
       {token , secret },
     ) as jsonwebtoken.JwtPayload;
-    const user : HydratedDocument<IUser> | null = await userRepo.findById({
+    const user : HydratedDocument<IUser> | null = await new userRepo().findById({
       id : verify.data.userId ,
     })
     if (!user) ErrorConflict('user does not exists')

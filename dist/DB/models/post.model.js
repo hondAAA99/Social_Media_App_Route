@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import availabiltyEnum from "../../common/enum/availablity.enum.js";
+import reactEnum from "../../common/enum/reactEnum.js";
 const postSchema = new mongoose.Schema({
     content: {
         type: String,
@@ -17,12 +18,16 @@ const postSchema = new mongoose.Schema({
     ],
     createdBy: { type: Schema.Types.ObjectId, ref: "users", required: true },
     tags: [{ type: Schema.Types.ObjectId }],
-    likes: [{ type: Schema.Types.ObjectId }],
     allowComments: { type: String, required: true },
     availablity: { type: String, enum: availabiltyEnum, required: true },
     folderId: { type: String, required: true },
     reactCount: { type: Number, default: 0 },
-    reactedUsers: [{ type: Schema.Types.ObjectId }],
+    reactedUsers: [
+        {
+            type: { userId: Schema.Types.ObjectId, react: Object.values(reactEnum) },
+        },
+    ],
+    deletedAt: { type: Date },
 });
 postSchema.pre(["findOne", "find"], function () {
     const { paranoid, ...rest } = this.getQuery();

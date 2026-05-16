@@ -31,12 +31,16 @@ class fireBaseServices {
     return await this._client.messaging().send(message);
   }
 
-  async sendNotifications({ tokens }: { tokens: string[] }) {
-    const data = {
-      title: "login alert",
-      body: `there is a device the logged-in to your account in ${Date.now()}`,
+  async sendNotifications({
+    tokens,
+    data,
+  }: {
+    tokens: string[];
+    data: {
+      title: string;
+      body: string;
     };
-
+  }) {
     await Promise.all(
       tokens.map((token) => {
         const message = { token, data };
@@ -46,4 +50,4 @@ class fireBaseServices {
   }
 }
 
-export default new fireBaseServices();
+export default fireBaseServices;

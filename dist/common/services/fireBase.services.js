@@ -14,11 +14,7 @@ class fireBaseServices {
         const message = { token, data };
         return await this._client.messaging().send(message);
     }
-    async sendNotifications({ tokens }) {
-        const data = {
-            title: "login alert",
-            body: `there is a device the logged-in to your account in ${Date.now()}`,
-        };
+    async sendNotifications({ tokens, data, }) {
         await Promise.all(tokens.map((token) => {
             const message = { token, data };
             this.sendNotification({ token, data });

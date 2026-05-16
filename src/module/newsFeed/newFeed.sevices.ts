@@ -2,15 +2,16 @@ import {
   ErrorConflict,
   SuccessResponse,
 } from "../../common/utils/globalresponse.js";
-import postRepo from "../../DB/repo/post.repo.js";
-import userRepo from "../../DB/repo/user.repo.js";
+import new postRepo() from "../../DB/repo/post.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import type { Request, Response, NextFunction } from "express";
 import postServices from "../posts/post.services.js";
-import { Schema, QueryFilter } from "mongoose";
+import { Schema } from "mongoose";
+import postAvailbilty from "../../common/utils/postUtils.ts";
 
 class newsFeed {
-  private readonly _userModel = userRepo;
-  private readonly _postModel = postRepo;
+  private readonly _userModel = new userRepo();
+  private readonly _postModel = new postRepo();
   private readonly _postServices = postServices;
   constructor() {}
 

@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import availabiltyEnum from "../../common/enum/availablity.enum.js";
+import reactEnum from "../../common/enum/reactEnum.js";
 
 export interface IPost {
   id: Schema.Types.ObjectId;
@@ -7,13 +8,12 @@ export interface IPost {
   attachments?: string[];
   createdBy: Schema.Types.ObjectId;
   tags?: Schema.Types.ObjectId[];
-  likes?: Schema.Types.ObjectId[];
   allowComments?: string;
   availablity: string;
   folderId: string;
   reactCount: number;
   reactedUsers?: Schema.Types.ObjectId[];
-
+  deletedAt: Date;
 }
 
 const postSchema = new mongoose.Schema<IPost>({
@@ -33,13 +33,16 @@ const postSchema = new mongoose.Schema<IPost>({
   ],
   createdBy: { type: Schema.Types.ObjectId, ref: "users", required: true },
   tags: [{ type: Schema.Types.ObjectId }],
-  likes: [{ type: Schema.Types.ObjectId }],
   allowComments: { type: String, required: true },
   availablity: { type: String, enum: availabiltyEnum, required: true },
   folderId: { type: String, required: true },
   reactCount: { type: Number, default: 0 },
-  reactedUsers: [{ type: Schema.Types.ObjectId }],
-
+  reactedUsers: [
+    {
+      type: { userId: Schema.Types.ObjectId, react: Object.values(reactEnum) },
+    },
+  ],
+  deletedAt: { type: Date },
 });
 
 postSchema.pre(["findOne", "find"], function () {
@@ -62,6 +65,12 @@ postSchema.pre(
     ]);
   },
 );
+
+postSchema.virtual("comments", {
+  ref: "comments",
+  localField: "_id",
+  foreignField: "refId",
+});
 
 const postModel = mongoose.models.posts || mongoose.model("posts", postSchema);
 

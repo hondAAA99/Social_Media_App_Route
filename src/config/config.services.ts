@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 const NODE_ENV = process.env.NODE_ENV;
 
-config({ path: resolve(`.env.${NODE_ENV}`) });
+config({ path: resolve(`./.env.${NODE_ENV}`) });
 
 export const PORT = Number(process.env.PORT);
 export const HOST = process.env.HOST;
@@ -33,3 +33,10 @@ export const AWS_SECRET_ACCESS_KEY = process.env
   .AWS_SECRET_ACCESS_KEY as string;
 export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME as string;
 export const APPLICATION_NAME = process.env.APPLICATION_NAME as string;
+export const apiKey = process.env.apiKey as string;
+export const authDomain = process.env.authDomain as string;
+export const projectId = process.env.projectId as string;
+export const storageBucket = process.env.storageBucket as string;
+export const messagingSenderId = process.env.messagingSenderId as string;
+export const appId = process.env.appId as string;
+export const measurementId = process.env.measurementId as string;

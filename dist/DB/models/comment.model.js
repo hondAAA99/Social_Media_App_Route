@@ -15,13 +15,15 @@ const commentSchema = new Schema({
         required: function () {
             return this.attachments ? false : true;
         },
-        attachments: {
-            type: [String],
-            required: function () {
-                return this.content ? false : true;
-            },
+    },
+    attachments: {
+        type: [String],
+        required: function () {
+            return this.content ? false : true;
         },
     },
+    tags: [{ type: Schema.Types.ObjectId }],
+    replay: [{ type: Schema.Types.ObjectId }],
 });
 const commentModel = mongoose.models.messages || mongoose.model("messages", commentSchema);
 export default commentModel;

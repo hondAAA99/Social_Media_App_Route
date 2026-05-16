@@ -1,17 +1,17 @@
-import userRepo from "../../DB/repo/user.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import { ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
 import redisServices from "../../common/services/redis.services.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
 import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 import s3Services from "../../common/services/s3Services.js";
 import { pipeline } from "stream/promises";
-import postRepo from "../../DB/repo/post.repo.js";
-import { Globalencrypt } from "../../common/security/encrypt.js";
+import new postRepo() from "../../DB/repo/post.repo.js";
+import { Globaldecrypt, Globalencrypt } from "../../common/security/encrypt.js";
 class userServices {
-    _userModel = userRepo;
+    _userModel = new userRepo();
     _redisServices = redisServices;
     _s3services = s3Services;
-    _postModel = postRepo;
+    _postModel = new postRepo();
     constructor() { }
     shareUser = async (req, res, next) => {
         const userId = req.params.userId;
@@ -69,6 +69,18 @@ class userServices {
         }
         SuccessResponse({ res, data: "user updated" });
     };
+    getProfile = (req, res, next) => {
+        SuccessResponse({
+            res,
+            data: {
+                userName: req.user?.userName,
+                email: req.user?.email,
+                age: req.user?.age,
+                gender: req.user?.gender,
+                phone: Globaldecrypt({ cipherText: req.user?.phone }),
+            },
+        });
+    };
     updatePassword = async (req, res, next) => {
         const { oldPassword, newPassword } = req.body;
         const user = req.user;
@@ -86,7 +98,7 @@ class userServices {
         await this._userModel.findByIdAndDelete({
             id: user.id,
         });
-        SuccessResponse({ res, data: 'user deleted' });
+        SuccessResponse({ res, data: "user deleted" });
     };
     logout = async (req, res, next) => {
         const { flag } = req.query;

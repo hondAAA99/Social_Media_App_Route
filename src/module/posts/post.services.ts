@@ -21,15 +21,16 @@ import {
   Types,
 } from "mongoose";
 import fireBaseServices from "../../common/services/fireBase.services.js";
-import availabiltyEnum from "../../common/enum/availablity.enum.js";
-import { IUser } from "../../DB/models/user.model.js";
+import { postAvailbilty, searchQuery } from "../../common/utils/postUtils.js";
+import { populate } from "dotenv";
+import { match } from "assert";
 
 class postServices {
-  private readonly _postModel = postRepo;
-  private readonly _userModel = userRepo;
-  private readonly _redisServices = redisServices;
-  private readonly _s3Service = s3Services;
-  private readonly _fireBase = fireBaseServices;
+  private readonly _postModel = new postRepo();
+  private readonly _userModel = new userRepo();
+  private readonly _redisServices = new redisServices();
+  private readonly _s3Service = new s3Services();
+  private readonly _fireBase = new fireBaseServices();
   constructor() {}
 
   createPost = async (req: Request, res: Response, next: NextFunction) => {
@@ -56,7 +57,7 @@ class postServices {
         mentions.push(mention.id);
         (
           await this._redisServices.getSet({
-            filter: user!.email,
+            filter: user!.email.data,
             subject: cacheKeyEnum.fcm,
           })
         ).map((token: string) => {
@@ -89,6 +90,10 @@ class postServices {
 
       await this._fireBase.sendNotifications({
         tokens: fcmArr,
+        data: {
+          title: `${user?.userName} updated their post`,
+          body: `${user?.userName} mentioned you in a post`,
+        },
       });
 
       SuccessResponse({ res, data: post });
@@ -100,32 +105,21 @@ class postServices {
       page: Number(req?.query?.page!),
       limit: Number(req?.query?.limit!),
       search: {
-        $or: [
-          ...this.postAvailbilty(req),
-          {
-            availablity: availabiltyEnum.onlyMe,
-            createdBy: req?.user?.id!,
-            content: req?.query?.search
-              ? { $regex: req?.query?.search, options: "i" }
-              : {},
-          },
-        ],
+        $or: [...postAvailbilty(req)],
+        searchQuery,
       },
+      populate: [
+        {
+          path: "comments",
+          match: {
+            commentId: { $exists: false },
+          },
+          populate: {
+            path: "replies",
+          },
+        },
+      ],
     });
-
-    // const posts = await this._postModel.findAll({
-    //   filter: {
-    //     $or: [
-    //       { availablity: availabiltyEnum.public },
-    //       { availablity: availabiltyEnum.onlyMe, createdBy: req?.user?.id! },
-    //       {
-    //         availablity: availabiltyEnum.freinds,
-    //         createdBy: { $in: [...(req?.user?.friends! || [])] },
-    //       },
-    //       { tags: { $in: [req?.user?.id] } },
-    //     ],
-    //   },
-    // });
 
     SuccessResponse({ res, data: posts });
   };
@@ -162,35 +156,9 @@ class postServices {
     SuccessResponse({ res, data: "like!" });
   };
 
-  postAvailbilty(req: Request) {
-    return [
-      {
-        availablity: availabiltyEnum.public,
-        content: req?.query?.search
-          ? {
-              $regex: req?.query?.search,
-               $options: "i",
-            }
-          : {},
-      },
-      {
-        availablity: availabiltyEnum.freinds,
-        createdBy: { $in: [...(req?.user?.friends! || [])] },
-        content: req?.query?.search
-          ? { $regex: req?.query?.search, $options: "i" }
-          : {},
-      },
-      {
-        tags: { $in: [req?.user?.id] },
-        content: req?.query?.search
-          ? { $regex: req?.query?.search,  $options: "i" }
-          : {},
-      },
-    ];
-  }
-
   updatePost = async (req: Request, res: Response, next: NextFunction) => {
     const { postId } = req.params;
+    const { user } = req;
     const {
       allowComment,
       availability,
@@ -252,7 +220,7 @@ class postServices {
         updateTags.add(tag._id.toString());
         (
           await this._redisServices.getSet({
-            filter: req?.user?.email!,
+            filter: req?.user?.email.data!,
             subject: cacheKeyEnum.fcm,
           })
         ).map((token) => {
@@ -268,6 +236,10 @@ class postServices {
     if (fcms_token?.length) {
       await this._fireBase.sendNotifications({
         tokens: fcms_token,
+        data: {
+          title: `${user?.userName} updated their post`,
+          body: `${user?.userName} mentioned you in a post`,
+        },
       });
     }
 
@@ -296,11 +268,3 @@ class postServices {
 }
 
 export default new postServices();
-
-// if (data?.tags && (data.tags as Array<any>).includes(data.createdBy)) {
-// ctx.addIssue({
-// code: "custom",
-// path: ["content"],
-// message: "you cannot tag your self in that post",
-// });
-// }

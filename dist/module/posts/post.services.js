@@ -1,6 +1,6 @@
 import { ErrorConflict, ErrorInteralServerError, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import postRepo from "../../DB/repo/post.repo.js";
-import userRepo from "../../DB/repo/user.repo.js";
+import new postRepo() from "../../DB/repo/post.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import redisServices from "../../common/services/redis.services.js";
 import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 import s3Services from "../../common/services/s3Services.js";
@@ -9,8 +9,8 @@ import { Schema, } from "mongoose";
 import fireBaseServices from "../../common/services/fireBase.services.js";
 import availabiltyEnum from "../../common/enum/availablity.enum.js";
 class postServices {
-    _postModel = postRepo;
-    _userModel = userRepo;
+    _postModel = new postRepo();
+    _userModel = new userRepo();
     _redisServices = redisServices;
     _s3Service = s3Services;
     _fireBase = fireBaseServices;

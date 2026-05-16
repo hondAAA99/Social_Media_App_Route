@@ -8,4 +8,4 @@ class commentRepo extends repoBase<IComment> {
   }
 }
 
-export default new commentRepo();
+export default commentRepo;

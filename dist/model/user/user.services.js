@@ -1,4 +1,4 @@
-import userRepo from "../../DB/repo/user.repo.js";
+import new userRepo() from "../../DB/repo/user.repo.js";
 import { ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
 import redisServices from "../../common/services/redis.services.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
@@ -6,7 +6,7 @@ import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 import s3services from "../../common/services/s3Services.js";
 import { pipeline } from 'stream/promises';
 class userServices {
-    _userModel = new userRepo();
+    _userModel = new new userRepo()();
     constructor() { }
     updatePassword = async (req, res, next) => {
         const { oldPassword, newPassword } = req.body;

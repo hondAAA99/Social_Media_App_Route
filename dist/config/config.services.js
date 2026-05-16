@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { resolve } from "node:path";
 const NODE_ENV = process.env.NODE_ENV;
-config({ path: resolve(`.env.${NODE_ENV}`) });
+config({ path: resolve(`./.env.${NODE_ENV}`) });
 export const PORT = Number(process.env.PORT);
 export const HOST = process.env.HOST;
 export const DB_URI = process.env.DB_URI;
@@ -30,3 +30,10 @@ export const AWS_SECRET_ACCESS_KEY = process.env
     .AWS_SECRET_ACCESS_KEY;
 export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME;
 export const APPLICATION_NAME = process.env.APPLICATION_NAME;
+export const apiKey = process.env.apiKey;
+export const authDomain = process.env.authDomain;
+export const projectId = process.env.projectId;
+export const storageBucket = process.env.storageBucket;
+export const messagingSenderId = process.env.messagingSenderId;
+export const appId = process.env.appId;
+export const measurementId = process.env.measurementId;

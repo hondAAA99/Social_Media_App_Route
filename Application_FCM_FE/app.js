@@ -1,6 +1,7 @@
 import { messaging } from "./firebase.js";
 
-const VAPID_KEY = "BGRl-BuapePXnjFTvPVt41LxEHbP2QRH5pAX2lqlYkHcl98r-SKseuaS3ygkO7ePSTzHS0zw8ramPzVNkYiD4Gc"
+const VAPID_KEY =
+  "BGRl-BuapePXnjFTvPVt41LxEHbP2QRH5pAX2lqlYkHcl98r-SKseuaS3ygkO7ePSTzHS0zw8ramPzVNkYiD4Gc";
 const BACKEND_URL = "http://localhost:3000/users/send-notification";
 
 let serviceWorkerRegistration = null;
@@ -8,8 +9,14 @@ let serviceWorkerRegistration = null;
 // ✅ Register Service Worker
 async function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
-    serviceWorkerRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-    console.log("✅ Service Worker registered");
+    try {
+      serviceWorkerRegistration = await navigator.serviceWorker.register(
+        "./firebase-messaging-sw.js",
+      );
+      console.log("✅ Service Worker registered");
+    } catch (err) {
+      console.error("Service Worker registration failed:", err);
+    }
   }
 }
 registerServiceWorker();
@@ -33,7 +40,6 @@ async function getFcmToken() {
 
     $("#tokenBox").val(token);
     $("#status").html(`<span class="text-success">Token generated</span>`);
-
   } catch (err) {
     console.error(err);
   }
@@ -69,6 +75,6 @@ $("#sendTestBtn").click(() => {
     },
     error: () => {
       $("#status").html(`<span class="text-danger">Failed</span>`);
-    }
+    },
   });
 });
