@@ -3,7 +3,6 @@ import postModel, { IPost } from "../../DB/models/post.model.js";
 import {
   ErrorConflict,
   ErrorInteralServerError,
-  ErrorUnAuthorizedRequest,
   SuccessResponse,
 } from "../../common/utils/globalresponse.js";
 import postRepo from "../../DB/repo/post.repo.js";
@@ -22,8 +21,6 @@ import {
 } from "mongoose";
 import fireBaseServices from "../../common/services/fireBase.services.js";
 import { postAvailbilty, searchQuery } from "../../common/utils/postUtils.js";
-import { populate } from "dotenv";
-import { match } from "assert";
 
 class postServices {
   private readonly _postModel = new postRepo();
@@ -105,8 +102,7 @@ class postServices {
       page: Number(req?.query?.page!),
       limit: Number(req?.query?.limit!),
       search: {
-        $or: [...postAvailbilty(req)],
-        searchQuery,
+        $or: [...postAvailbilty(req), searchQuery(req)],
       },
       populate: [
         {

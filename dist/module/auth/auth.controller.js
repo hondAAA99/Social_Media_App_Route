@@ -1,10 +1,11 @@
 import auth from "./auth.services.js";
 import { Router } from "express";
-import { signUpSchema, signInSchema, confirmSignUpSchema, forgetPassword, resetPassowrd, } from "./auth.validationSchema.js";
+import { signUpSchema, signInSchema, confirmSignUpSchema, forgetPassword, resetPassowrd, confirmLoginSchema, } from "./auth.validationSchema.js";
 import { validationMiddleWare } from "../../common/middleware/validation.js";
 export const authRouter = Router();
 authRouter.post("/sign-up", validationMiddleWare(signUpSchema), auth.signUp);
-authRouter.post("/confirm-sign-up", validationMiddleWare(confirmSignUpSchema), auth.confirmMail);
+authRouter.post("/confirm-sign-up", validationMiddleWare(confirmSignUpSchema), auth.confirmMailAndEnaaleTwoStepVeffiction);
+authRouter.post("/confirm-sign-up", validationMiddleWare(confirmLoginSchema), auth.confirmLogin);
 authRouter.post("/log-in", validationMiddleWare(signInSchema), auth.logIn);
 authRouter.post("/resend-otp", validationMiddleWare(resetPassowrd), auth.reSendOtp);
 authRouter.post("/sign-with-google", auth.signUpAndLoginWithGmail);

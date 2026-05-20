@@ -2,12 +2,18 @@ import admin from "firebase-admin";
 import { resolve } from "path";
 import { readFileSync } from "fs";
 class fireBaseServices {
-    _client;
-    constructor() {
-        const path = JSON.parse(readFileSync(resolve("src/config/social-media-app-66b81-firebase-adminsdk-fbsvc-c1dbd34a46.json"), "utf-8"));
-        this._client = admin.initializeApp({
-            credential: admin.credential.cert(path),
-        });
+    _client = undefined;
+    constructor() { }
+    firBaseConnection() {
+        if (admin.apps.length) {
+            this._client = admin.app();
+        }
+        else {
+            const path = JSON.parse(readFileSync(resolve("src/config/social-media-app-66b81-firebase-adminsdk-fbsvc-c1dbd34a46.json"), "utf-8"));
+            this._client = admin.initializeApp({
+                credential: admin.credential.cert(path),
+            });
+        }
         console.log("connected to fireBase");
     }
     async sendNotification({ token, data, }) {
@@ -21,4 +27,4 @@ class fireBaseServices {
         }));
     }
 }
-export default new fireBaseServices();
+export default fireBaseServices;

@@ -17,8 +17,8 @@ export const sendEmail = async ({
   data: any;
 }) => {
   // check blocked email
-  const blockedUser = await redisServices.getKeyTtl(
-    redisServices.cacheKey({
+  const blockedUser = await new redisServices().getKeyTtl(
+    new redisServices().cacheKey({
       filter : to ,
       subject : cacheKeyEnum.block
     })
@@ -27,28 +27,28 @@ export const sendEmail = async ({
 
   // check email attempts
 
-  let attempts = await redisServices.getKey({
-    key : redisServices.cacheKey({
+  let attempts = await new redisServices().getKey({
+    key : new redisServices().cacheKey({
       filter : to ,
       subject : cacheKeyEnum.emailAttempts
     })
   })
 
   if (!attempts){
-    attempts = await redisServices.setKey({
-      key : redisServices.cacheKey({filter : to , subject : cacheKeyEnum.emailAttempts}),
+    attempts = await new redisServices().setKey({
+      key : new redisServices().cacheKey({filter : to , subject : cacheKeyEnum.emailAttempts}),
       value : 0 ,
       ttl : 6*10,
     }) as string
   }
 
   // incr attempts email
-  attempts = await redisServices.incrKey(redisServices.cacheKey({filter : to , subject : cacheKeyEnum.emailAttempts}))
+  attempts = await new redisServices().incrKey(new redisServices().cacheKey({filter : to , subject : cacheKeyEnum.emailAttempts}))
 
   // check attempts number
   if ( attempts as any > 5){
-    await redisServices.setKey({
-      key : redisServices.cacheKey({filter : to , subject : cacheKeyEnum.block  }),
+    await new redisServices().setKey({
+      key : new redisServices().cacheKey({filter : to , subject : cacheKeyEnum.block  }),
       value : 1 ,
       ttl : 60*10
     })
@@ -56,8 +56,8 @@ export const sendEmail = async ({
   }
 
 
-  await redisServices.setKey({
-    key: redisServices.cacheKey({ filter: to, subject }),
+  await new redisServices().setKey({
+    key: new redisServices().cacheKey({ filter: to, subject }),
     value: subject == "otp" ? Globalhash({ plainText: `${data}` }) : data,
     ttl: 60 * 5,
   });

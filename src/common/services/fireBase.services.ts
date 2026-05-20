@@ -3,19 +3,25 @@ import { resolve } from "path";
 import { readFileSync } from "fs";
 
 class fireBaseServices {
-  private readonly _client: admin.app.App;
-  constructor() {
-    const path = JSON.parse(
-      readFileSync(
-        resolve(
-          "src/config/social-media-app-66b81-firebase-adminsdk-fbsvc-c1dbd34a46.json",
+  private _client: admin.app.App = undefined!;
+  constructor() {}
+
+  firBaseConnection() {
+    if (admin.apps.length) {
+      this._client = admin.app(); // reuse existing app
+    } else {
+      const path = JSON.parse(
+        readFileSync(
+          resolve(
+            "src/config/social-media-app-66b81-firebase-adminsdk-fbsvc-c1dbd34a46.json",
+          ),
+          "utf-8",
         ),
-        "utf-8",
-      ),
-    );
-    this._client = admin.initializeApp({
-      credential: admin.credential.cert(path),
-    });
+      );
+      this._client = admin.initializeApp({
+        credential: admin.credential.cert(path),
+      });
+    }
 
     console.log("connected to fireBase");
   }

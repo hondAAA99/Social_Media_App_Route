@@ -5,7 +5,7 @@ import { updatePasswordSchema } from "./user.Schema.js";
 import { validationMiddleWare } from "../../common/middleware/validation.js";
 export const userRouter = Router();
 userRouter.patch("/update-password", validationMiddleWare(updatePasswordSchema), authenticate, userServices.updatePassword);
-userRouter.get("/share-user/:userId", userServices.shareUser);
+userRouter.get("/share-user/:userId", userServices.getUserSharedData);
 userRouter.put("/update-profile", authenticate, userServices.updateProfile);
 userRouter.delete("/delete-user", authenticate, userServices.deleteUser);
 userRouter.get("/log-out", authenticate, userServices.logout);

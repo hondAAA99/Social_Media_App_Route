@@ -17,9 +17,9 @@ class userRepo extends repoBase<IUser> {
   }): Promise<HydratedDocument<IUser> | null> {
     return await this._model.findOne({
       filter: {
-        email,
+        "email.data": email,
         confirmed,
-      } as { email: string; confirmed: boolean },
+      },
     });
   }
 }

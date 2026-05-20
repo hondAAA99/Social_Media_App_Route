@@ -109,4 +109,4 @@ class s3services {
         this.deleteFiles({ Keys: folder });
     }
 }
-export default new s3services();
+export default s3services;

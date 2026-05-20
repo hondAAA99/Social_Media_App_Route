@@ -2,12 +2,12 @@ import {
   ErrorConflict,
   SuccessResponse,
 } from "../../common/utils/globalresponse.js";
-import new postRepo() from "../../DB/repo/post.repo.js";
-import new userRepo() from "../../DB/repo/user.repo.js";
+import postRepo from "../../DB/repo/post.repo.js";
+import userRepo from "../../DB/repo/user.repo.js";
 import type { Request, Response, NextFunction } from "express";
 import postServices from "../posts/post.services.js";
 import { Schema } from "mongoose";
-import postAvailbilty from "../../common/utils/postUtils.ts";
+import { postAvailbilty } from "../../common/utils/postUtils.js";
 
 class newsFeed {
   private readonly _userModel = new userRepo();
@@ -23,7 +23,7 @@ class newsFeed {
     const posts = this._postModel.paginate({
       search: {
         createdBy: { $in: friends || [] },
-        availiabilty: this._postServices.postAvailbilty(req),
+        availiabilty: postAvailbilty(req),
       },
       limit: +limit!,
       page: +page!,
@@ -38,7 +38,7 @@ class newsFeed {
     const post = await this._postModel.findOne({
       filter: {
         id: postId as Schema.Types.ObjectId,
-        $or: this._postServices.postAvailbilty(req) as any[],
+        $or: [...postAvailbilty(req)],
       },
     });
     if (!post) return ErrorConflict("post does not eists");

@@ -9,6 +9,7 @@ export const signUpSchema = {
         phone: zod.string().optional(),
         role: zod.string().optional(),
         gender: zod.string().optional(),
+        DateOfBirth: zod.date(),
     })
         .superRefine((data, ctx) => {
         if (data.password != data.cpassword) {
@@ -18,13 +19,21 @@ export const signUpSchema = {
                 path: ["cpassword"],
             });
         }
+        if (Number(new Date(data.DateOfBirth).getTime) > Date.now() ||
+            Number(new Date(data.DateOfBirth).getTime) - Date.now() < 378691200000) {
+            ctx.addIssue({
+                code: zod.z.ZodIssueCode.custom,
+                message: "invalid Date",
+                path: ["DateOfBirth"],
+            });
+        }
     }),
 };
 export const signInSchema = {
     body: zod.object({
         email: zod.email(),
         password: zod.string(),
-        fcm: zod.string()
+        fcm: zod.string(),
     }),
 };
 export const confirmSignUpSchema = {
@@ -48,5 +57,11 @@ export const resetPassowrd = {
 export const resendOtp = {
     body: zod.object({
         email: zod.email(),
+    }),
+};
+export const confirmLoginSchema = {
+    body: zod.object({
+        email: zod.email(),
+        otp: zod.string().length(5),
     }),
 };

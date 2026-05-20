@@ -2,17 +2,22 @@ import mongoose, { model, Schema } from "mongoose";
 import roleEnum from "../../common/enum/role.enum.js";
 import genderEnum from "../../common/enum/gender.enum.js";
 import providerEnum from "../../common/enum/provider.enum.js";
+import availabiltyEnum from "../../common/enum/availablity.enum.js";
 const userSchema = new Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: {
+        type: new Schema({
+            data: { type: String },
+            availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+        }),
+        required: true,
+        unique: true,
+    },
     password: {
         type: String,
         required: function () {
-            if (this.provider == providerEnum.system)
-                return true;
-            else
-                return false;
+            return this.provider === providerEnum.system;
         },
     },
     role: {
@@ -21,39 +26,73 @@ const userSchema = new Schema({
         enum: Object.values(roleEnum),
     },
     gender: {
-        type: String,
-        default: genderEnum.preferNotToSay,
-        enum: Object.values(genderEnum),
+        type: new Schema({
+            data: {
+                type: String,
+                enum: Object.values(genderEnum),
+                default: genderEnum.preferNotToSay,
+            },
+            availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+        }),
+        default: {
+            data: genderEnum.preferNotToSay,
+            availibilty: availabiltyEnum.onlyMe,
+        },
     },
     phone: {
-        type: String,
+        type: new Schema({
+            data: { type: String },
+            availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+        }),
+        default: {
+            data: "",
+            availibilty: availabiltyEnum.onlyMe,
+        },
         required: function () {
-            if (this.provider == providerEnum.system)
-                return true;
-            else
-                return false;
+            return this.provider === providerEnum.system;
         },
     },
     age: {
-        type: String,
-        min: 12,
+        type: new Schema({
+            data: { type: Date },
+            availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+        }),
+        default: {
+            data: undefined,
+            availibilty: availabiltyEnum.onlyMe,
+        },
         required: function () {
-            if (this.provider == providerEnum.system)
-                return true;
-            else
-                return false;
+            return this.provider === providerEnum.system;
         },
     },
     confirmed: { type: Boolean, default: false },
     provider: {
         type: String,
-        enum: Object.values(providerEnum),
         default: providerEnum.system,
+        enum: Object.values(providerEnum),
     },
-    profilePicture: { type: String },
+    profilePicture: {
+        type: new Schema({
+            data: { type: String },
+            availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+        }),
+        default: {
+            data: undefined,
+            availibilty: availabiltyEnum.public,
+        },
+        required: function () {
+            return this.provider === providerEnum.system;
+        },
+    },
     creadnatials: { type: Date },
     deletedAt: { type: Date },
-    friends: { type: [Schema.Types.ObjectId] },
+    friends: {
+        type: new Schema({
+            data: [{ type: Schema.Types.ObjectId, ref: "users" }],
+            availibilty: { type: [String], enum: Object.values(availabiltyEnum) },
+        }),
+    },
+    twoStepVerfiction: { type: Boolean, default: false },
 }, {
     timestamps: true,
     strictQuery: true,
@@ -72,12 +111,14 @@ userSchema
     return this.firstName + " " + this.lastName;
 });
 userSchema.pre(["findOne", "find"], function () {
-    const { paranoid, ...rest } = this.getQuery();
-    if (paranoid == true) {
-        this.setQuery({ deleteAt: { $exists: false }, rest });
+    const query = this.getQuery();
+    const { paranoid, ...rest } = query;
+    if (paranoid === true) {
+        this.setQuery({ deletedAt: { $exists: false }, ...rest });
     }
-    else
-        this.setQuery({ rest });
+    else {
+        this.setQuery({ ...rest });
+    }
 });
 userSchema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], async function () {
     const condition = this.getQuery();

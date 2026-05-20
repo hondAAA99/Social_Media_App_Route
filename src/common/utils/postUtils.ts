@@ -19,6 +19,20 @@ export function postAvailbilty(req: Request) {
     },
   ];
 }
+export function userDataAvailibilty(req: Request) {
+  return [
+    {
+      availablity: availabiltyEnum.onlyMe,
+    },
+    {
+      availablity: availabiltyEnum.public,
+    },
+    {
+      availablity: availabiltyEnum.freinds,
+      createdBy: { $in: req.user?.friends.data ?? [] },
+    },
+  ];
+}
 export function searchQuery(req: Request) {
   return {
     content: req?.query?.search

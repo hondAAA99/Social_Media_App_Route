@@ -1,7 +1,8 @@
 import { ErrorConflict, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import new postRepo() from "../../DB/repo/post.repo.js";
-import new userRepo() from "../../DB/repo/user.repo.js";
+import postRepo from "../../DB/repo/post.repo.js";
+import userRepo from "../../DB/repo/user.repo.js";
 import postServices from "../posts/post.services.js";
+import { postAvailbilty } from "../../common/utils/postUtils.js";
 class newsFeed {
     _userModel = new userRepo();
     _postModel = new postRepo();
@@ -14,7 +15,7 @@ class newsFeed {
         const posts = this._postModel.paginate({
             search: {
                 createdBy: { $in: friends || [] },
-                availiabilty: this._postServices.postAvailbilty(req),
+                availiabilty: postAvailbilty(req),
             },
             limit: +limit,
             page: +page,
@@ -27,7 +28,7 @@ class newsFeed {
         const post = await this._postModel.findOne({
             filter: {
                 id: postId,
-                $or: this._postServices.postAvailbilty(req),
+                $or: [...postAvailbilty(req)],
             },
         });
         if (!post)

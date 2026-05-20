@@ -30,6 +30,10 @@ import {
   resetPasswordDTO,
   signUpDTO,
 } from "./auth.dto.js";
+import {
+  postAvailbilty,
+  userDataAvailibilty,
+} from "../../common/utils/postUtils.js";
 class auth {
   private readonly _userModel = new userRepo();
   private readonly _fireBase = new fireBaseServices();
@@ -51,12 +55,12 @@ class auth {
     }
 
     const user: HydratedDocument<IUser> = await this._userModel.create({
-      userName.data,
-      email,
+      userName,
+      "email.data": email,
       password: Globalhash({ plainText: password }),
-      age: DateOfBirth,
-      phone: phone ? Globalencrypt({ plainText: phone }) : null,
-      gender,
+      "age.data": DateOfBirth,
+      "phone.data": phone ? Globalencrypt({ plainText: phone }) : null,
+      "gender.data": gender,
     } as Partial<IUser>);
 
     await sendEmail({
@@ -150,7 +154,7 @@ class auth {
   ) => {
     const { email } = req.body;
     const emailExists = await this._userModel.findOne({
-      filter: { email },
+      filter: { "email.data": email },
     });
     if (!emailExists) ErrorConflict("email does not exists");
     await sendEmail({
@@ -231,7 +235,7 @@ class auth {
     });
 
     await this._userModel.findOneAndUpdate({
-      filter: { email },
+      filter: { "email.data": email },
       update: { confirmed: true, twoStepVerfiction: true },
     });
 
@@ -264,7 +268,7 @@ class auth {
     if (!emailExists) {
       emailExists = await this._userModel.create({
         userName: name,
-        email,
+        "email.data": email,
         provider: providerEnum.google,
         confirmed: email_verified,
       } as Partial<IUser>);
@@ -285,7 +289,9 @@ class auth {
   ): Promise<void> => {
     const { email }: resendOtpDTO = req.body;
 
-    const user = await this._userModel.findOne({ filter: email as any });
+    const user = await this._userModel.findOne({
+      filter: { "email.data": email },
+    });
     if (!user) {
       ErrorConflict("user does not exists");
     }
@@ -342,7 +348,7 @@ class auth {
     });
 
     await this._userModel.findOneAndUpdate({
-      filter: { email, confirmed: true },
+      filter: { "email.data": email, confirmed: true },
       update: {
         password: Globalhash({ plainText: newPassword }),
       },

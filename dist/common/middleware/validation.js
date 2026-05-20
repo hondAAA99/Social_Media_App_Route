@@ -1,4 +1,5 @@
 import { ErrorInteralServerError } from "../utils/globalresponse.js";
+import { GraphQLError } from "graphql";
 export const validationMiddleWare = (schema) => {
     return async (req, res, next) => {
         const arrOfError = [];
@@ -24,4 +25,26 @@ export const validationMiddleWare = (schema) => {
         }
         next();
     };
+};
+export const validationGQL = async (schema, args) => {
+    const arrOfError = [];
+    const result = await schema.safeParseAsync(args);
+    if (!result.success) {
+        const errors = result.error.issues.map((err) => {
+            return {
+                path: err.path,
+                message: err.message,
+            };
+        });
+        arrOfError.push(errors);
+    }
+    if (arrOfError.length > 0) {
+        return new GraphQLError("validationError", {
+            extensions: {
+                code: "validation error",
+                status: 401,
+                errors: arrOfError,
+            },
+        });
+    }
 };

@@ -46,5 +46,10 @@ postSchema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], async function (
         }),
     ]);
 });
+postSchema.virtual("comments", {
+    ref: "comments",
+    localField: "_id",
+    foreignField: "refId",
+});
 const postModel = mongoose.models.posts || mongoose.model("posts", postSchema);
 export default postModel;

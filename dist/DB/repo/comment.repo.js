@@ -7,4 +7,4 @@ class commentRepo extends repoBase {
         this._commentModel = _commentModel;
     }
 }
-export default new commentRepo();
+export default commentRepo;

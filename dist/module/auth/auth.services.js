@@ -1,5 +1,5 @@
 import { ErrorConflict, Errorforbidden, ErrorInteralServerError, ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import new userRepo() from "../../DB/repo/user.repo.js";
+import userRepo from "../../DB/repo/user.repo.js";
 import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
 import { Globalencrypt } from "../../common/security/encrypt.js";
 import { sendEmail } from "../../common/utils/email/sendEmail.js";
@@ -14,21 +14,22 @@ import fireBaseServices from "../../common/services/fireBase.services.js";
 import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 class auth {
     _userModel = new userRepo();
-    _fireBase = fireBaseServices;
-    _redisServices = redisServices;
+    _fireBase = new fireBaseServices();
+    _redisServices = new redisServices();
     constructor() { }
     signUp = async (req, res, next) => {
-        const { userName, email, password, phone, gender } = req.body;
+        const { userName, email, password, phone, gender, DateOfBirth } = req.body;
         const emailExists = await this._userModel.userEmailExists({ email });
         if (emailExists) {
             ErrorConflict("email already exists");
         }
         const user = await this._userModel.create({
             userName,
-            email,
+            "email.data": email,
             password: Globalhash({ plainText: password }),
-            phone: phone ? Globalencrypt({ plainText: phone }) : null,
-            gender,
+            "age.data": DateOfBirth,
+            "phone.data": phone ? Globalencrypt({ plainText: phone }) : null,
+            "gender.data": gender,
         });
         await sendEmail({
             to: email,
@@ -88,10 +89,60 @@ class auth {
                 },
             });
         }
-        const { accessToken, refreshToken } = generateTokens(emailExists);
-        SuccessResponse({ res, data: { accessToken, refreshToken } });
+        const data = function () {
+            if (emailExists) {
+                return "please confirm your login";
+            }
+            else {
+                return generateTokens(emailExists);
+            }
+        };
+        SuccessResponse({ res, data });
     };
-    confirmMail = async (req, res, next) => {
+    EnableTwoStepVerfiction = async (req, res, next) => {
+        const { email } = req.body;
+        const emailExists = await this._userModel.findOne({
+            filter: { "email.data": email },
+        });
+        if (!emailExists)
+            ErrorConflict("email does not exists");
+        await sendEmail({
+            to: email,
+            subject: mailEnum.twoStepVerfiction,
+            data: Globalhash({
+                plainText: Math.ceil(Math.random() * 10000).toString(),
+            }),
+        });
+        SuccessResponse({ res, data: "verfiction email sent" });
+    };
+    confirmLogin = async (req, res, next) => {
+        const { email, otp } = req.body;
+        const emailExists = await this._userModel.userEmailExists({ email });
+        if (emailExists) {
+            ErrorConflict("email doesn't exists");
+        }
+        if (emailExists?.confirmed == true)
+            ErrorConflict("your email is already confirmed");
+        const CachedOtp = await this._redisServices.getKey({
+            key: this._redisServices.cacheKey({
+                filter: email,
+                subject: mailEnum.consrimSingUp,
+            }),
+        });
+        if (!GlobalCompare({ plainText: otp, hashText: CachedOtp }))
+            Errorforbidden("wrong otp code");
+        await this._redisServices.deleteKey({
+            key: this._redisServices.cacheKey({
+                filter: email,
+                subject: mailEnum.consrimSingUp,
+            }),
+        });
+        SuccessResponse({
+            res,
+            data: generateTokens(emailExists),
+        });
+    };
+    confirmMailAndEnaaleTwoStepVeffiction = async (req, res, next) => {
         const { email, otp } = req.body;
         const emailExists = await this._userModel.userEmailExists({ email });
         if (emailExists) {
@@ -114,8 +165,8 @@ class auth {
             }),
         });
         await this._userModel.findOneAndUpdate({
-            filter: { email },
-            update: { confirmed: true },
+            filter: { "email.data": email },
+            update: { confirmed: true, twoStepVerfiction: true },
         });
         SuccessResponse({ res, data: "email confirmed" });
     };
@@ -134,7 +185,7 @@ class auth {
         if (!emailExists) {
             emailExists = await this._userModel.create({
                 userName: name,
-                email,
+                "email.data": email,
                 provider: providerEnum.google,
                 confirmed: email_verified,
             });
@@ -146,7 +197,9 @@ class auth {
     };
     reSendOtp = async (req, res, next) => {
         const { email } = req.body;
-        const user = await this._userModel.findOne({ filter: email });
+        const user = await this._userModel.findOne({
+            filter: { "email.data": email },
+        });
         if (!user) {
             ErrorConflict("user does not exists");
         }
@@ -193,18 +246,12 @@ class auth {
             }),
         });
         await this._userModel.findOneAndUpdate({
-            filter: { email, confirmed: true },
+            filter: { "email.data": email, confirmed: true },
             update: {
                 password: Globalhash({ plainText: newPassword }),
             },
         });
         SuccessResponse({ res, data: "password updated" });
-    };
-    sendNotification = async (req, res, next) => {
-        const { token } = req.body;
-        const data = { title: "title test", body: "body test" };
-        const result = fireBaseServices.sendNotification({ token, data });
-        SuccessResponse({ res, data: result });
     };
 }
 export default new auth();

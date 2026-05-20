@@ -37,7 +37,6 @@ const userSchema = new Schema<IUser>(
       }),
       required: true,
       unique: true,
-      default: { data: "", availibilty: availabiltyEnum.onlyMe },
     },
     password: {
       type: String,
@@ -114,12 +113,8 @@ const userSchema = new Schema<IUser>(
     friends: {
       type: new Schema({
         data: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+        availibilty: { type: [String], enum: Object.values(availabiltyEnum) },
       }),
-      default: {
-        data: undefined,
-        availibilty: availabiltyEnum.public,
-      },
     },
     twoStepVerfiction: { type: Boolean, default: false },
   },

@@ -1,19 +1,19 @@
 import { ErrorConflict, ErrorInteralServerError, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import new postRepo() from "../../DB/repo/post.repo.js";
-import new userRepo() from "../../DB/repo/user.repo.js";
+import postRepo from "../../DB/repo/post.repo.js";
+import userRepo from "../../DB/repo/user.repo.js";
 import redisServices from "../../common/services/redis.services.js";
 import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 import s3Services from "../../common/services/s3Services.js";
 import { randomUUID } from "crypto";
 import { Schema, } from "mongoose";
 import fireBaseServices from "../../common/services/fireBase.services.js";
-import availabiltyEnum from "../../common/enum/availablity.enum.js";
+import { postAvailbilty, searchQuery } from "../../common/utils/postUtils.js";
 class postServices {
     _postModel = new postRepo();
     _userModel = new userRepo();
-    _redisServices = redisServices;
-    _s3Service = s3Services;
-    _fireBase = fireBaseServices;
+    _redisServices = new redisServices();
+    _s3Service = new s3Services();
+    _fireBase = new fireBaseServices();
     constructor() { }
     createPost = async (req, res, next) => {
         const { availablity, content, tags, allowComments } = req.body;
@@ -33,7 +33,7 @@ class postServices {
             mentionsArr?.map(async (mention) => {
                 mentions.push(mention.id);
                 (await this._redisServices.getSet({
-                    filter: user.email,
+                    filter: user.email.data,
                     subject: cacheKeyEnum.fcm,
                 })).map((token) => {
                     fcmArr.push(token);
@@ -61,6 +61,10 @@ class postServices {
             }
             await this._fireBase.sendNotifications({
                 tokens: fcmArr,
+                data: {
+                    title: `${user?.userName} updated their post`,
+                    body: `${user?.userName} mentioned you in a post`,
+                },
             });
             SuccessResponse({ res, data: post });
         }
@@ -70,17 +74,19 @@ class postServices {
             page: Number(req?.query?.page),
             limit: Number(req?.query?.limit),
             search: {
-                $or: [
-                    ...this.postAvailbilty(req),
-                    {
-                        availablity: availabiltyEnum.onlyMe,
-                        createdBy: req?.user?.id,
-                        content: req?.query?.search
-                            ? { $regex: req?.query?.search, options: "i" }
-                            : {},
-                    },
-                ],
+                $or: [...postAvailbilty(req), searchQuery(req)],
             },
+            populate: [
+                {
+                    path: "comments",
+                    match: {
+                        commentId: { $exists: false },
+                    },
+                    populate: {
+                        path: "replies",
+                    },
+                },
+            ],
         });
         SuccessResponse({ res, data: posts });
     };
@@ -109,34 +115,9 @@ class postServices {
         }
         SuccessResponse({ res, data: "like!" });
     };
-    postAvailbilty(req) {
-        return [
-            {
-                availablity: availabiltyEnum.public,
-                content: req?.query?.search
-                    ? {
-                        $regex: req?.query?.search,
-                        $options: "i",
-                    }
-                    : {},
-            },
-            {
-                availablity: availabiltyEnum.freinds,
-                createdBy: { $in: [...(req?.user?.friends || [])] },
-                content: req?.query?.search
-                    ? { $regex: req?.query?.search, $options: "i" }
-                    : {},
-            },
-            {
-                tags: { $in: [req?.user?.id] },
-                content: req?.query?.search
-                    ? { $regex: req?.query?.search, $options: "i" }
-                    : {},
-            },
-        ];
-    }
     updatePost = async (req, res, next) => {
         const { postId } = req.params;
+        const { user } = req;
         const { allowComment, availability, content, tags, removeFiles, removeTags, } = req.body;
         const post = await this._postModel.findOne({
             filter: {
@@ -179,7 +160,7 @@ class postServices {
                 }
                 updateTags.add(tag._id.toString());
                 (await this._redisServices.getSet({
-                    filter: req?.user?.email,
+                    filter: req?.user?.email.data,
                     subject: cacheKeyEnum.fcm,
                 })).map((token) => {
                     fcms_token.push(token);
@@ -190,6 +171,10 @@ class postServices {
         if (fcms_token?.length) {
             await this._fireBase.sendNotifications({
                 tokens: fcms_token,
+                data: {
+                    title: `${user?.userName} updated their post`,
+                    body: `${user?.userName} mentioned you in a post`,
+                },
             });
         }
         if (content)

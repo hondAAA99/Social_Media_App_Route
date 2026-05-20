@@ -14,8 +14,13 @@ class repoBase {
             .sort(options?.sort)
             .populate(options?.populate);
     }
-    async findOne({ filter, projection, }) {
-        return await this._model.findOne(filter, projection);
+    async findOne({ filter, projection, options, }) {
+        return await this._model
+            .findOne(filter, projection)
+            .skip(options?.skip)
+            .limit(options?.limit)
+            .sort(options?.sort)
+            .populate(options?.populate);
     }
     async findById({ id, projection, }) {
         return await this._model.findById(id, projection);
