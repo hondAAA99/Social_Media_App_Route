@@ -2,14 +2,14 @@ import { authenticateGQL } from "../../../common/middleware/authenticate.js";
 import { postAvailbilty } from "../../../common/utils/postUtils.js";
 import postModel from "../../../DB/models/post.model.js";
 import postRepo from "../../../DB/repo/post.repo.js";
-import { GQLPostsType } from "./types.js";
+import { postData } from "./types.js";
 
 class GLpostsFields {
   private readonly _postModel = new postRepo();
   constructor() {}
   getUserPosts = () => {
     return {
-      type: GQLPostsType,
+      type: postData,
       resolve: async (parent: any, args: any, context: any) => {
         const { user } = await authenticateGQL(context);
         const posts = this._postModel.findAll({

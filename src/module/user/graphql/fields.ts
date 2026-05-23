@@ -1,20 +1,11 @@
-import {
-  GraphQLID,
-  GraphQLInt,
-  GraphQLList,
-  GraphQLNonNull,
-  GraphQLObjectType,
-  GraphQLString,
-} from "graphql";
+import { GraphQLList, GraphQLObjectType } from "graphql";
 import { authenticateGQL } from "../../../common/middleware/authenticate.js";
-import postModel from "../../../DB/models/post.model.js";
-import { SuccessResponse } from "../../../common/utils/globalresponse.js";
-import fields from "../../auth/graphql/fields.js";
 import { userData } from "./types.js";
 import { postData } from "../../posts/graphQL/types.js";
+import postRepo from "../../../DB/repo/post.repo.js";
 
 class GqlUserFields {
-  private readonly _postModel = new postModel();
+  private readonly _postModel = new postRepo();
   constructor() {}
 
   getUserDataAndPosts = () => {

@@ -1,9 +1,10 @@
-import { GraphQLList, GraphQLObjectType, } from "graphql";
+import { GraphQLList, GraphQLObjectType } from "graphql";
 import { authenticateGQL } from "../../../common/middleware/authenticate.js";
-import postModel from "../../../DB/models/post.model.js";
-import { postData, userData } from "./types.js";
+import { userData } from "./types.js";
+import { postData } from "../../posts/graphQL/types.js";
+import postRepo from "../../../DB/repo/post.repo.js";
 class GqlUserFields {
-    _postModel = new postModel();
+    _postModel = new postRepo();
     constructor() { }
     getUserDataAndPosts = () => {
         return {

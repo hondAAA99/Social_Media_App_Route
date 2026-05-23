@@ -10,7 +10,7 @@ import { userRouter } from "./module/user/user.controller.js";
 import redisServices from "./common/services/redis.services.js";
 import postRouter from "./module/posts/post.controller.js";
 import newsFeedRouter from "./module/newsFeed/newsFeed.controller.js";
-import { createHandler } from "graphql-http";
+import { createHandler } from "graphql-http/lib/use/express";
 import GQLSchema from "./module/graphql/graphql.schema.js";
 import fireBaseServices from "./common/services/fireBase.services.js";
 const app = express();
@@ -20,7 +20,7 @@ const bootstrap = async () => {
     app.use(express.json());
     app.use(helmet(), cors(), limiter);
     await checkDataBaseConnection();
-    await new redisServices().connect();
+    new redisServices().connect();
     new fireBaseServices().firBaseConnection();
     app.use("/auth", authRouter);
     app.use("/users", userRouter);

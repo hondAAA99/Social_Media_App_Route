@@ -16,9 +16,10 @@ import redisServices from "./common/services/redis.services.js";
 import postRouter from "./module/posts/post.controller.js";
 import commentRouter from "./module/comment/comment.controller.js";
 import newsFeedRouter from "./module/newsFeed/newsFeed.controller.js";
-import { createHandler } from "graphql-http";
+import { createHandler } from "graphql-http/lib/use/express";
 import GQLSchema from "./module/graphql/graphql.schema.js";
 import fireBaseServices from "./common/services/fireBase.services.js";
+import { GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
 const app: Application = express();
 const port = Number(PORT);
 const host = HOST;
@@ -27,12 +28,13 @@ const bootstrap = async () => {
   app.use(express.json());
   app.use(helmet(), cors(), limiter);
   await checkDataBaseConnection();
-  await new redisServices().connect();
+  new redisServices().connect();
   new fireBaseServices().firBaseConnection();
   app.use("/auth", authRouter);
   app.use("/users", userRouter);
   app.use("/posts", postRouter);
   app.use("/news-feed", newsFeedRouter);
+
   app.use(
     "/graphql",
     createHandler({ schema: GQLSchema, context: (req) => ({ req }) }),

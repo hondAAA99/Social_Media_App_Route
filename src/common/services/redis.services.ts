@@ -2,26 +2,17 @@ import { ErrorInteralServerError } from "../utils/globalresponse.js";
 import redis, { createClient, RedisArgument, RedisClientType } from "redis";
 import { string } from "zod";
 import { REDIS_CLIENT } from "../../config/config.services.js";
-import { eventEmitter } from "../utils/email/email.event.js";
 
 class redisService {
-  private readonly _client: RedisClientType = redis.createClient({});
-  constructor() {
-    this._client = createClient({
-      url: REDIS_CLIENT,
-    });
-    this.eventHandler();
-  }
+  private readonly _client: RedisClientType = redis.createClient({
+    url: REDIS_CLIENT,
+  });
+
+  constructor() {}
 
   async connect() {
     await this._client.connect();
     console.log("connected to redis succeded");
-  }
-
-  eventHandler() {
-    this._client.on("error", () => {
-      ErrorInteralServerError("connection to redis failed");
-    });
   }
 
   private async keyExists({ key }: { key: RedisArgument }): Promise<number> {
@@ -110,32 +101,46 @@ class redisService {
   }
 
   // redis.RedisArgument, members: RedisVariadicArgument
-  async addSet({filter,subject} :{filter : string , subject : string} , members : any ) : Promise<number>{
-    return await this._client.sAdd(this.cacheKey({
-      filter ,
-      subject
-    }),members)
+  async addSet(
+    { filter, subject }: { filter: string; subject: string },
+    members: any,
+  ): Promise<number> {
+    return await this._client.sAdd(
+      this.cacheKey({
+        filter,
+        subject,
+      }),
+      members,
+    );
   }
-  async getSet({filter,subject} :{filter : string , subject : string}){
-    return await this._client.sMembers(this.cacheKey({
-      filter ,
-      subject
-    }))
+  async getSet({ filter, subject }: { filter: string; subject: string }) {
+    return await this._client.sMembers(
+      this.cacheKey({
+        filter,
+        subject,
+      }),
+    );
   }
-  async deleteSet({filter,subject} :{filter : string , subject : string} , members : any){
-    return await this._client.sRem(this.cacheKey({
-      filter ,
-      subject
-    }),members)
-
+  async deleteSet(
+    { filter, subject }: { filter: string; subject: string },
+    members: any,
+  ) {
+    return await this._client.sRem(
+      this.cacheKey({
+        filter,
+        subject,
+      }),
+      members,
+    );
   }
-  async existsSet({filter,subject} :{filter : string , subject : string}){
-    return await this._client.sCard(this.cacheKey({
-      filter ,
-      subject
-    }))
-
+  async existsSet({ filter, subject }: { filter: string; subject: string }) {
+    return await this._client.sCard(
+      this.cacheKey({
+        filter,
+        subject,
+      }),
+    );
   }
 }
 
-export default  redisService;
+export default redisService;

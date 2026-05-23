@@ -1,12 +1,10 @@
-import { GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
+import { GraphQLObjectType, GraphQLSchema } from "graphql";
+import GqlUserFields from "../user/graphql/fields.js";
 const GQLSchema = new GraphQLSchema({
     query: new GraphQLObjectType({
         name: "query",
         fields: {
-            ping: {
-                type: GraphQLString,
-                resolve: () => "pong",
-            },
+            getUserData: GqlUserFields.getUserDataAndPosts(),
         },
     }),
 });

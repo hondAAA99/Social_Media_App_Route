@@ -14,19 +14,19 @@ export const authRouter: Router = Router();
 
 authRouter.post("/sign-up", validationMiddleWare(signUpSchema), auth.signUp);
 
+authRouter.post("/log-in", validationMiddleWare(signInSchema), auth.logIn);
+
 authRouter.post(
-  "/confirm-sign-up",
+  "/confirm-Mail-And-Enable-Two-Step-Veffiction",
   validationMiddleWare(confirmSignUpSchema),
-  auth.confirmMailAndEnaaleTwoStepVeffiction,
+  auth.confirmMailAndEnableTwoStepVeffiction,
 );
 
 authRouter.post(
-  "/confirm-sign-up",
+  "/confirm-login-in",
   validationMiddleWare(confirmLoginSchema),
   auth.confirmLogin,
 );
-
-authRouter.post("/log-in", validationMiddleWare(signInSchema), auth.logIn);
 
 authRouter.post(
   "/resend-otp",

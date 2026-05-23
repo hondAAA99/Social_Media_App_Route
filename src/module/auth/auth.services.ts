@@ -90,61 +90,61 @@ class auth {
       Errorforbidden("wrong password");
     }
 
-    let recorderedFcms = await this._redisServices.getSet({
-      filter: email,
-      subject: cacheKeyEnum.fcm,
-    });
+    // let recorderedFcms = await this._redisServices.getSet({
+    //   filter: email,
+    //   subject: cacheKeyEnum.fcm,
+    // });
 
-    if (!recorderedFcms) {
-      await this._redisServices.addSet(
-        {
-          filter: email,
-          subject: cacheKeyEnum.fcm,
-        },
-        fcm,
-      );
-      this._fireBase.sendNotification({
-        token: fcm,
-        data: {
-          title: "login alert",
-          body: `new login at ${new Date(Date.now())}`,
-        },
-      });
-    } else if (!recorderedFcms.includes(fcm)) {
-      recorderedFcms.push(fcm);
-      await this._redisServices.addSet(
-        {
-          filter: email,
-          subject: cacheKeyEnum.fcm,
-        },
-        recorderedFcms,
-      );
-      this._fireBase.sendNotifications({
-        tokens: [...recorderedFcms, fcm],
-        data: {
-          title: "login alert",
-          body: `new login at ${new Date(Date.now())}`,
-        },
-      });
-    } else {
-      this._fireBase.sendNotifications({
-        tokens: recorderedFcms,
-        data: {
-          title: "login alert",
-          body: `new login at ${new Date(Date.now())}`,
-        },
-      });
-    }
+    // if (!recorderedFcms) {
+    //   await this._redisServices.addSet(
+    //     {
+    //       filter: email,
+    //       subject: cacheKeyEnum.fcm,
+    //     },
+    //     fcm,
+    //   );
+    //   this._fireBase.sendNotification({
+    //     token: fcm,
+    //     data: {
+    //       title: "login alert",
+    //       body: `new login at ${new Date(Date.now())}`,
+    //     },
+    //   });
+    // } else if (!recorderedFcms.includes(fcm)) {
+    //   recorderedFcms.push(fcm);
+    //   await this._redisServices.addSet(
+    //     {
+    //       filter: email,
+    //       subject: cacheKeyEnum.fcm,
+    //     },
+    //     recorderedFcms,
+    //   );
+    //   this._fireBase.sendNotifications({
+    //     tokens: [...recorderedFcms, fcm],
+    //     data: {
+    //       title: "login alert",
+    //       body: `new login at ${new Date(Date.now())}`,
+    //     },
+    //   });
+    // } else {
+    //   await this._fireBase.sendNotifications({
+    //     tokens: recorderedFcms,
+    //     data: {
+    //       title: "login alert",
+    //       body: `new login at ${new Date(Date.now())}`,
+    //     },
+    //   });
+    // }
 
     const data = function () {
-      if (emailExists) {
+      if (emailExists?.twoStepVerfiction == true) {
         return "please confirm your login";
       } else {
         return generateTokens(emailExists! as HydratedDocument<IUser>);
       }
     };
 
-    SuccessResponse({ res, data });
+    SuccessResponse({ res, data: data() });
   };
 
   EnableTwoStepVerfiction = async (
@@ -204,7 +204,7 @@ class auth {
     });
   };
 
-  confirmMailAndEnaaleTwoStepVeffiction = async (
+  confirmMailAndEnableTwoStepVeffiction = async (
     req: Request,
     res: Response,
     next: NextFunction,

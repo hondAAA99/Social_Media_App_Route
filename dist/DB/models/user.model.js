@@ -4,6 +4,7 @@ import genderEnum from "../../common/enum/gender.enum.js";
 import providerEnum from "../../common/enum/provider.enum.js";
 import availabiltyEnum from "../../common/enum/availablity.enum.js";
 const userSchema = new Schema({
+    profileLock: { type: Boolean, default: false },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: {
@@ -72,10 +73,7 @@ const userSchema = new Schema({
         enum: Object.values(providerEnum),
     },
     profilePicture: {
-        type: new Schema({
-            data: { type: String },
-            availibilty: { type: String, enum: Object.values(availabiltyEnum) },
-        }),
+        type: String,
         default: {
             data: undefined,
             availibilty: availabiltyEnum.public,

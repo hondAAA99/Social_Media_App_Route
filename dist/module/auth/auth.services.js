@@ -11,7 +11,6 @@ import { O2AUTH_CLIENT_ID } from "../../config/config.services.js";
 import { OAuth2Client } from "google-auth-library";
 import providerEnum from "../../common/enum/provider.enum.js";
 import fireBaseServices from "../../common/services/fireBase.services.js";
-import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
 class auth {
     _userModel = new userRepo();
     _fireBase = new fireBaseServices();
@@ -49,55 +48,15 @@ class auth {
         if (!GlobalCompare({ plainText: password, hashText: emailExists.password })) {
             Errorforbidden("wrong password");
         }
-        let recorderedFcms = await this._redisServices.getSet({
-            filter: email,
-            subject: cacheKeyEnum.fcm,
-        });
-        if (!recorderedFcms) {
-            await this._redisServices.addSet({
-                filter: email,
-                subject: cacheKeyEnum.fcm,
-            }, fcm);
-            this._fireBase.sendNotification({
-                token: fcm,
-                data: {
-                    title: "login alert",
-                    body: `new login at ${new Date(Date.now())}`,
-                },
-            });
-        }
-        else if (!recorderedFcms.includes(fcm)) {
-            recorderedFcms.push(fcm);
-            await this._redisServices.addSet({
-                filter: email,
-                subject: cacheKeyEnum.fcm,
-            }, recorderedFcms);
-            this._fireBase.sendNotifications({
-                tokens: [...recorderedFcms, fcm],
-                data: {
-                    title: "login alert",
-                    body: `new login at ${new Date(Date.now())}`,
-                },
-            });
-        }
-        else {
-            this._fireBase.sendNotifications({
-                tokens: recorderedFcms,
-                data: {
-                    title: "login alert",
-                    body: `new login at ${new Date(Date.now())}`,
-                },
-            });
-        }
         const data = function () {
-            if (emailExists) {
+            if (emailExists?.twoStepVerfiction == true) {
                 return "please confirm your login";
             }
             else {
                 return generateTokens(emailExists);
             }
         };
-        SuccessResponse({ res, data });
+        SuccessResponse({ res, data: data() });
     };
     EnableTwoStepVerfiction = async (req, res, next) => {
         const { email } = req.body;
@@ -142,7 +101,7 @@ class auth {
             data: generateTokens(emailExists),
         });
     };
-    confirmMailAndEnaaleTwoStepVeffiction = async (req, res, next) => {
+    confirmMailAndEnableTwoStepVeffiction = async (req, res, next) => {
         const { email, otp } = req.body;
         const emailExists = await this._userModel.userEmailExists({ email });
         if (emailExists) {

@@ -1,23 +1,15 @@
 import { ErrorInteralServerError } from "../utils/globalresponse.js";
-import redis, { createClient } from "redis";
+import redis from "redis";
 import { string } from "zod";
 import { REDIS_CLIENT } from "../../config/config.services.js";
 class redisService {
-    _client = redis.createClient({});
-    constructor() {
-        this._client = createClient({
-            url: REDIS_CLIENT,
-        });
-        this.eventHandler();
-    }
+    _client = redis.createClient({
+        url: REDIS_CLIENT,
+    });
+    constructor() { }
     async connect() {
         await this._client.connect();
         console.log("connected to redis succeded");
-    }
-    eventHandler() {
-        this._client.on("error", () => {
-            ErrorInteralServerError("connection to redis failed");
-        });
     }
     async keyExists({ key }) {
         return await this._client.exists(key);
@@ -98,25 +90,25 @@ class redisService {
     async addSet({ filter, subject }, members) {
         return await this._client.sAdd(this.cacheKey({
             filter,
-            subject
+            subject,
         }), members);
     }
     async getSet({ filter, subject }) {
         return await this._client.sMembers(this.cacheKey({
             filter,
-            subject
+            subject,
         }));
     }
     async deleteSet({ filter, subject }, members) {
         return await this._client.sRem(this.cacheKey({
             filter,
-            subject
+            subject,
         }), members);
     }
     async existsSet({ filter, subject }) {
         return await this._client.sCard(this.cacheKey({
             filter,
-            subject
+            subject,
         }));
     }
 }

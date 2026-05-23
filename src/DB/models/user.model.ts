@@ -10,11 +10,12 @@ export interface IUser {
   lastName: string;
   userName: string;
   email: { data: string; availibilty: string };
-  profilePicture?: { data: string; availibilty: string };
+  profilePicture?: String;
   friends: { data: Schema.Types.ObjectId[]; availibilty: string };
   phone?: { data: string; availibilty: string };
   age?: { data: Date; availibilty: string };
   gender?: { data: string; availibilty: string };
+  profileLock?: boolean;
   role?: string;
   password: string;
   createdAt: Date;
@@ -28,6 +29,7 @@ export interface IUser {
 
 const userSchema = new Schema<IUser>(
   {
+    profileLock: { type: Boolean, default: false },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: {
@@ -96,10 +98,7 @@ const userSchema = new Schema<IUser>(
       enum: Object.values(providerEnum),
     },
     profilePicture: {
-      type: new Schema({
-        data: { type: String },
-        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
-      }),
+      type: String,
       default: {
         data: undefined,
         availibilty: availabiltyEnum.public,

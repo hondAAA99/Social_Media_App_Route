@@ -51,5 +51,6 @@ export const accessTokenVerify = ({
   token: string;
   secret: string;
 }) => {
+
   return jsonwebtoken.verify(token, secret);
 };

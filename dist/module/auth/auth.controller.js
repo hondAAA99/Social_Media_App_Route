@@ -4,9 +4,9 @@ import { signUpSchema, signInSchema, confirmSignUpSchema, forgetPassword, resetP
 import { validationMiddleWare } from "../../common/middleware/validation.js";
 export const authRouter = Router();
 authRouter.post("/sign-up", validationMiddleWare(signUpSchema), auth.signUp);
-authRouter.post("/confirm-sign-up", validationMiddleWare(confirmSignUpSchema), auth.confirmMailAndEnaaleTwoStepVeffiction);
-authRouter.post("/confirm-sign-up", validationMiddleWare(confirmLoginSchema), auth.confirmLogin);
 authRouter.post("/log-in", validationMiddleWare(signInSchema), auth.logIn);
+authRouter.post("/confirm-Mail-And-Enable-Two-Step-Veffiction", validationMiddleWare(confirmSignUpSchema), auth.confirmMailAndEnableTwoStepVeffiction);
+authRouter.post("/confirm-login-in", validationMiddleWare(confirmLoginSchema), auth.confirmLogin);
 authRouter.post("/resend-otp", validationMiddleWare(resetPassowrd), auth.reSendOtp);
 authRouter.post("/sign-with-google", auth.signUpAndLoginWithGmail);
 authRouter.put("/forget-password", validationMiddleWare(forgetPassword), auth.forgetPassword);
