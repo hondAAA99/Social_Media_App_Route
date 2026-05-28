@@ -3,6 +3,7 @@ import availabiltyEnum from "../../common/enum/availablity.enum.js";
 import allowCommentsEnum from "../../common/enum/allowComments.enum.js";
 import { Types } from "mongoose";
 import { genRules } from "../../common/utils/validationGeneralRules.js";
+import hideLikeCount from "../../common/enum/hideLikeCounts.enum.js";
 export const createPostSchema = {
     body: z
         .strictObject({
@@ -11,6 +12,7 @@ export const createPostSchema = {
         createdBy: z.string(),
         tags: z.array(genRules.id).optional,
         allowComments: z.enum(allowCommentsEnum).default(allowCommentsEnum.allow),
+        hideLikeCount: z.enum(hideLikeCount).default(hideLikeCount.show),
         availablity: z.enum(availabiltyEnum).default(availabiltyEnum.freinds),
     })
         .superRefine((data, ctx) => {
@@ -57,13 +59,14 @@ export const likePostSchema = {
 export const updatePostSchema = {
     body: z
         .strictObject({
-        content: z.string().optional,
+        content: z.string().optional(),
         attachments: z.array(genRules.file).optional(),
         removeFiles: z.array(z.string()).optional(),
         tags: z.array(genRules.id).optional,
         removeTags: z.array(genRules.id).optional,
-        allowComment: z.enum(allowCommentsEnum).default(allowCommentsEnum.allow),
-        availability: z.enum(availabiltyEnum).default(availabiltyEnum.freinds),
+        allowComment: z.enum(allowCommentsEnum).optional(),
+        hideLikeCount: z.enum(hideLikeCount).optional(),
+        availability: z.enum(availabiltyEnum).optional(),
     })
         .superRefine((data, ctx) => {
         if (data?.tags &&

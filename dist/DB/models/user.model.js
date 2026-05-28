@@ -3,6 +3,7 @@ import roleEnum from "../../common/enum/role.enum.js";
 import genderEnum from "../../common/enum/gender.enum.js";
 import providerEnum from "../../common/enum/provider.enum.js";
 import availabiltyEnum from "../../common/enum/availablity.enum.js";
+import { friendsFlagEnum } from "../../common/enum/friendsFlag.enum.js";
 const userSchema = new Schema({
     profileLock: { type: Boolean, default: false },
     firstName: { type: String, required: true },
@@ -25,6 +26,14 @@ const userSchema = new Schema({
         type: String,
         default: roleEnum.user,
         enum: Object.values(roleEnum),
+    },
+    story: {
+        type: [
+            new Schema({
+                url: { type: String },
+                createdAt: { type: Date },
+            }),
+        ],
     },
     gender: {
         type: new Schema({
@@ -86,10 +95,20 @@ const userSchema = new Schema({
     deletedAt: { type: Date },
     friends: {
         type: new Schema({
-            data: [{ type: Schema.Types.ObjectId, ref: "users" }],
-            availibilty: { type: [String], enum: Object.values(availabiltyEnum) },
+            availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+            data: {
+                type: Array(new Schema({
+                    flag: {
+                        type: String,
+                        enum: Object.values(friendsFlagEnum),
+                        default: friendsFlagEnum.requestd,
+                    },
+                    friendId: { type: Schema.Types.ObjectId, ref: "users" },
+                })),
+            },
         }),
     },
+    blockedUsers: { type: [Schema.Types.ObjectId] },
     twoStepVerfiction: { type: Boolean, default: false },
 }, {
     timestamps: true,
@@ -98,8 +117,7 @@ const userSchema = new Schema({
     toObject: {},
     toJSON: {},
 });
-userSchema
-    .virtual("userName")
+userSchema.virtual("userName")
     .set(function (value) {
     const [fn, ln] = value.split(" ");
     this.firstName = fn;
@@ -133,5 +151,6 @@ userSchema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], async function (
         }, { deletedAt: Date.now() }),
     ]);
 });
+userSchema.index({ "story.createdAt": 1 }, { expireAfterSeconds: 0 });
 const userModel = mongoose.models.users || model("users", userSchema);
 export default userModel;

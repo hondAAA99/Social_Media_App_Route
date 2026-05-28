@@ -13,12 +13,14 @@ import newsFeedRouter from "./module/newsFeed/newsFeed.controller.js";
 import { createHandler } from "graphql-http/lib/use/express";
 import GQLSchema from "./module/graphql/graphql.schema.js";
 import fireBaseServices from "./common/services/fireBase.services.js";
+import { deleteUnconfirmedUsersCronJob } from "./common/utils/cronJob.js";
 const app = express();
 const port = Number(PORT);
 const host = HOST;
 const bootstrap = async () => {
     app.use(express.json());
     app.use(helmet(), cors(), limiter);
+    app.use(deleteUnconfirmedUsersCronJob);
     await checkDataBaseConnection();
     new redisServices().connect();
     new fireBaseServices().firBaseConnection();

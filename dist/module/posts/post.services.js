@@ -1,4 +1,4 @@
-import { ErrorConflict, ErrorInteralServerError, SuccessResponse, } from "../../common/utils/globalresponse.js";
+import { ErrorConflict, ErrorInteralServerError, ErrorNotFound, SuccessResponse, } from "../../common/utils/globalresponse.js";
 import postRepo from "../../DB/repo/post.repo.js";
 import userRepo from "../../DB/repo/user.repo.js";
 import redisServices from "../../common/services/redis.services.js";
@@ -16,7 +16,7 @@ class postServices {
     _fireBase = new fireBaseServices();
     constructor() { }
     createPost = async (req, res, next) => {
-        const { availablity, content, tags, allowComments } = req.body;
+        const { availablity, content, tags, allowComments, hideLikeCount, } = req.body;
         const { user } = req;
         let mentionsArr;
         let fcmArr = [];
@@ -66,6 +66,7 @@ class postServices {
                     body: `${user?.userName} mentioned you in a post`,
                 },
             });
+            post.reacts.reactAviliablity = hideLikeCount;
             SuccessResponse({ res, data: post });
         }
     };
@@ -93,32 +94,28 @@ class postServices {
     likePost = async (req, res, next) => {
         const postId = req.params.postId;
         const { flag } = req.query;
-        let queryFilter = {
-            $addToSet: { likes: req?.user?._id },
-        };
-        if (flag == "disLike") {
-            queryFilter = {
-                $pull: { likes: req?.user?._id },
-            };
-        }
-        const post = this._postModel.findOneAndUpdate({
-            filter: {
-                id: new Schema.Types.ObjectId(postId),
-                createdBy: new Schema.Types.ObjectId(req?.user?.id),
-            },
+        const { user } = req;
+        const post = await this._postModel.findById({ id: postId });
+        if (!post)
+            return ErrorNotFound("post not found");
+        const reactPath = `reacts.reactsCount.${flag}`;
+        await this._postModel.findByIdAndUpdate({
+            id: postId,
             update: {
-                likes: queryFilter,
+                $inc: { reactPath: 1, " reacts.reactsCount.total": 1 },
             },
         });
-        if (!post) {
-            ErrorInteralServerError("failed to like the post");
-        }
+        post.reacts.reactedUsers.push({
+            userId: user?.id,
+            react: flag,
+        });
+        await post.save();
         SuccessResponse({ res, data: "like!" });
     };
     updatePost = async (req, res, next) => {
         const { postId } = req.params;
         const { user } = req;
-        const { allowComment, availability, content, tags, removeFiles, removeTags, } = req.body;
+        const { allowComment, availability, content, tags, removeFiles, removeTags, hideLikeCount, } = req.body;
         const post = await this._postModel.findOne({
             filter: {
                 _id: postId,
@@ -183,6 +180,8 @@ class postServices {
             post.availablity = availability;
         if (allowComment)
             post.allowComments = allowComment;
+        if (hideLikeCount)
+            post.reacts.reactAviliablity = hideLikeCount;
         await post.save();
         SuccessResponse({ res, data: " post updated" });
     };

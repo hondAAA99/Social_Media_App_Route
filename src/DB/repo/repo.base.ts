@@ -117,7 +117,7 @@ abstract class repoBase<Tdocument> {
   }: {
     filter: QueryFilter<Tdocument>;
     options?: QueryOptions<Tdocument>;
-    paranoid: Boolean;
+    paranoid?: Boolean;
   }) {
     return await this._model.deleteMany(filter);
   }

@@ -24,17 +24,3 @@ export const postData = new GraphQLObjectType({
   },
 });
 
-
-// xport interface IPost {
-//   id: Schema.Types.ObjectId;
-//   content: string;
-//   attachments?: string[];
-//   createdBy: Schema.Types.ObjectId;
-//   tags?: Schema.Types.ObjectId[];
-//   allowComments?: string;
-//   availablity: string;
-//   folderId: string;
-//   reactCount: number;
-//   reactedUsers?: Schema.Types.ObjectId[];
-//   deletedAt: Date;
-// }

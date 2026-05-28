@@ -58,22 +58,6 @@ class auth {
         };
         SuccessResponse({ res, data: data() });
     };
-    EnableTwoStepVerfiction = async (req, res, next) => {
-        const { email } = req.body;
-        const emailExists = await this._userModel.findOne({
-            filter: { "email.data": email },
-        });
-        if (!emailExists)
-            ErrorConflict("email does not exists");
-        await sendEmail({
-            to: email,
-            subject: mailEnum.twoStepVerfiction,
-            data: Globalhash({
-                plainText: Math.ceil(Math.random() * 10000).toString(),
-            }),
-        });
-        SuccessResponse({ res, data: "verfiction email sent" });
-    };
     confirmLogin = async (req, res, next) => {
         const { email, otp } = req.body;
         const emailExists = await this._userModel.userEmailExists({ email });
@@ -100,6 +84,22 @@ class auth {
             res,
             data: generateTokens(emailExists),
         });
+    };
+    EnableTwoStepVerfiction = async (req, res, next) => {
+        const { email } = req.body;
+        const emailExists = await this._userModel.findOne({
+            filter: { "email.data": email },
+        });
+        if (!emailExists)
+            ErrorConflict("email does not exists");
+        await sendEmail({
+            to: email,
+            subject: mailEnum.twoStepVerfiction,
+            data: Globalhash({
+                plainText: Math.ceil(Math.random() * 10000).toString(),
+            }),
+        });
+        SuccessResponse({ res, data: "verfiction email sent" });
     };
     confirmMailAndEnableTwoStepVeffiction = async (req, res, next) => {
         const { email, otp } = req.body;

@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import availabiltyEnum from "../../common/enum/availablity.enum.js";
-import reactEnum from "../../common/enum/reactEnum.js";
+import reactsEnum from "../../common/enum/reactEnum.js";
+import hideLikeCount from "../../common/enum/hideLikeCounts.enum.js";
 
 export interface IPost {
   id: Schema.Types.ObjectId;
@@ -11,8 +12,22 @@ export interface IPost {
   allowComments?: string;
   availablity: string;
   folderId: string;
-  reactCount: number;
-  reactedUsers?: Schema.Types.ObjectId[];
+  reacts: {
+    reactAviliablity: string;
+    reactsCount: {
+      total: number;
+      like: number;
+      love: number;
+      sad: number;
+      angry: number;
+      care: number;
+      wow: number;
+    };
+    reactedUsers: {
+      userId: Schema.Types.ObjectId;
+      react: string;
+    }[];
+  };
   deletedAt: Date;
 }
 
@@ -36,12 +51,36 @@ const postSchema = new mongoose.Schema<IPost>({
   allowComments: { type: String, required: true },
   availablity: { type: String, enum: availabiltyEnum, required: true },
   folderId: { type: String, required: true },
-  reactCount: { type: Number, default: 0 },
-  reactedUsers: [
-    {
-      type: { userId: Schema.Types.ObjectId, react: Object.values(reactEnum) },
-    },
-  ],
+  reacts: {
+    type: new Schema({
+      reactAviliablity: { type: String, default: hideLikeCount.show },
+      reactsCount: {
+        type: new Schema({
+          total: { type: Number },
+          like: { type: Number },
+          love: { type: Number },
+          sad: { type: Number },
+          angry: { type: Number },
+          care: { type: Number },
+          wow: { type: Number },
+        }),
+      },
+      reactedUsers: {
+        type: [
+          new Schema({
+            userId: Schema.Types.ObjectId,
+            react: String,
+          }),
+        ],
+      },
+    }),
+  },
+  // reactCount: { type: Number, default: 0 },
+  // reactedUsers: [
+  //   {
+  //     type: { userId: Schema.Types.ObjectId, react: Object.values(reactEnum) },
+  //   },
+  // ],
   deletedAt: { type: Date },
 });
 

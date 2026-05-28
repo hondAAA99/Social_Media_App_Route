@@ -1,5 +1,5 @@
-import type { Request, Response, NextFunction } from "express";
-import { IUser } from "../../DB/models/user.model.js";
+import type { Request, Response, NextFunction } from 'express'
+import { IUser } from '../../DB/models/user.model.js'
 
 import {
   ErrorConflict,
@@ -7,21 +7,25 @@ import {
   ErrorInteralServerError,
   ErrorUnAuthorizedRequest,
   SuccessResponse,
-} from "../../common/utils/globalresponse.js";
-import { _QueryFilter, HydratedDocument } from "mongoose";
-import userRepo from "../../DB/repo/user.repo.js";
-import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
-import { Globaldecrypt, Globalencrypt } from "../../common/security/encrypt.js";
-import { sendEmail } from "../../common/utils/email/sendEmail.js";
-import mailEnum from "../../common/enum/mail.enum.js";
-import { genrateOtp } from "../../common/utils/email/nodeMailer.js";
-import { generateTokens } from "./services.helpers.js";
-import redisServices from "../../common/services/redis.services.js";
-import { O2AUTH_CLIENT_ID } from "../../config/config.services.js";
-import { LoginTicket, OAuth2Client, TokenPayload } from "google-auth-library";
-import providerEnum from "../../common/enum/provider.enum.js";
-import fireBaseServices from "../../common/services/fireBase.services.js";
-import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
+} from '../../common/utils/globalresponse.js'
+import { _QueryFilter, HydratedDocument } from 'mongoose'
+import userRepo from '../../DB/repo/user.repo.js'
+import { GlobalCompare, Globalhash } from '../../common/security/hash.js'
+import { Globaldecrypt, Globalencrypt } from '../../common/security/encrypt.js'
+import { sendEmail } from '../../common/utils/email/sendEmail.js'
+import mailEnum from '../../common/enum/mail.enum.js'
+import { genrateOtp } from '../../common/utils/email/nodeMailer.js'
+import { generateTokens } from './services.helpers.js'
+import redisServices from '../../common/services/redis.services.js'
+import {
+  O2AUTH_CLIENT_ID,
+  SECRET_USER_REFRESH_TOKEN,
+  TOKEN_USER_PREFIX,
+} from '../../config/config.services.js'
+import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library'
+import providerEnum from '../../common/enum/provider.enum.js'
+import fireBaseServices from '../../common/services/fireBase.services.js'
+import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
 import {
   confirmEmailDTO,
   forgetPasswordDTO,
@@ -29,15 +33,20 @@ import {
   resendOtpDTO,
   resetPasswordDTO,
   signUpDTO,
-} from "./auth.dto.js";
+} from './auth.dto.js'
 import {
   postAvailbilty,
   userDataAvailibilty,
-} from "../../common/utils/postUtils.js";
+} from '../../common/utils/postUtils.js'
+import {
+  generateAccessToken,
+  TokenVerify,
+} from '../../common/security/jsonWebTokens.js'
+import { Schema } from 'mongoose'
 class auth {
-  private readonly _userModel = new userRepo();
-  private readonly _fireBase = new fireBaseServices();
-  private readonly _redisServices = new redisServices();
+  private readonly _userModel = new userRepo()
+  private readonly _fireBase = new fireBaseServices()
+  private readonly _redisServices = new redisServices()
 
   constructor() {}
 
@@ -47,47 +56,47 @@ class auth {
     next: NextFunction,
   ): Promise<void> => {
     const { userName, email, password, phone, gender, DateOfBirth }: signUpDTO =
-      req.body;
+      req.body
     const emailExists: HydratedDocument<IUser> | null =
-      await this._userModel.userEmailExists({ email });
+      await this._userModel.userEmailExists({ email })
     if (emailExists) {
-      ErrorConflict("email already exists");
+      ErrorConflict('email already exists')
     }
 
     const user: HydratedDocument<IUser> = await this._userModel.create({
       userName,
-      "email.data": email,
+      'email.data': email,
       password: Globalhash({ plainText: password }),
-      "age.data": DateOfBirth,
-      "phone.data": phone ? Globalencrypt({ plainText: phone }) : null,
-      "gender.data": gender,
-    } as Partial<IUser>);
+      'age.data': DateOfBirth,
+      'phone.data': phone ? Globalencrypt({ plainText: phone }) : null,
+      'gender.data': gender,
+    } as Partial<IUser>)
 
     await sendEmail({
       to: email,
       subject: mailEnum.consrimSingUp,
       data: genrateOtp(),
-    });
+    })
 
-    SuccessResponse({ res, data: "please confirm your email" });
-  };
+    SuccessResponse({ res, data: 'please confirm your email' })
+  }
 
   logIn = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const { email, password, fcm }: lobInDTO = req.body;
+    const { email, password, fcm }: lobInDTO = req.body
     const emailExists: HydratedDocument<IUser> | null =
-      await this._userModel.userEmailExists({ email, confirmed: true });
+      await this._userModel.userEmailExists({ email, confirmed: true })
     if (!emailExists) {
-      ErrorConflict("email doesn't exists");
+      ErrorConflict("email doesn't exists")
     }
-    if (!emailExists) ErrorConflict("email does not exists or confirmed");
+    if (!emailExists) ErrorConflict('email does not exists or confirmed')
     if (
       !GlobalCompare({ plainText: password, hashText: emailExists!.password })
     ) {
-      Errorforbidden("wrong password");
+      Errorforbidden('wrong password')
     }
 
     // let recorderedFcms = await this._redisServices.getSet({
@@ -138,224 +147,248 @@ class auth {
 
     const data = function () {
       if (emailExists?.twoStepVerfiction == true) {
-        return "please confirm your login";
+        return 'please confirm your login'
       } else {
-        return generateTokens(emailExists! as HydratedDocument<IUser>);
+        return generateTokens(emailExists! as HydratedDocument<IUser>)
       }
-    };
+    }
 
-    SuccessResponse({ res, data: data() });
-  };
-
-  EnableTwoStepVerfiction = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    const { email } = req.body;
-    const emailExists = await this._userModel.findOne({
-      filter: { "email.data": email },
-    });
-    if (!emailExists) ErrorConflict("email does not exists");
-    await sendEmail({
-      to: email,
-      subject: mailEnum.twoStepVerfiction,
-      data: Globalhash({
-        plainText: Math.ceil(Math.random() * 10000).toString(),
-      }),
-    });
-
-    SuccessResponse({ res, data: "verfiction email sent" });
-  };
+    SuccessResponse({ res, data: data() })
+  }
 
   confirmLogin = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const { email, otp }: confirmEmailDTO = req.body;
+    const { email, otp }: confirmEmailDTO = req.body
     const emailExists: HydratedDocument<IUser> | null =
-      await this._userModel.userEmailExists({ email });
+      await this._userModel.userEmailExists({ email })
     if (emailExists) {
-      ErrorConflict("email doesn't exists");
+      ErrorConflict("email doesn't exists")
     }
     if (emailExists?.confirmed == true)
-      ErrorConflict("your email is already confirmed");
+      ErrorConflict('your email is already confirmed')
 
     const CachedOtp: string | void = await this._redisServices.getKey({
       key: this._redisServices.cacheKey({
         filter: email,
         subject: mailEnum.consrimSingUp,
       }),
-    });
+    })
     if (!GlobalCompare({ plainText: otp, hashText: CachedOtp as string }))
-      Errorforbidden("wrong otp code");
+      Errorforbidden('wrong otp code')
 
     await this._redisServices.deleteKey({
       key: this._redisServices.cacheKey({
         filter: email,
         subject: mailEnum.consrimSingUp,
       }),
-    });
+    })
 
     SuccessResponse({
       res,
       data: generateTokens(emailExists! as HydratedDocument<IUser>),
-    });
-  };
+    })
+  }
+
+  EnableTwoStepVerfiction = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    const { email } = req.body
+    const emailExists = await this._userModel.findOne({
+      filter: { 'email.data': email },
+    })
+    if (!emailExists) ErrorConflict('email does not exists')
+    await sendEmail({
+      to: email,
+      subject: mailEnum.twoStepVerfiction,
+      data: Globalhash({
+        plainText: Math.ceil(Math.random() * 10000).toString(),
+      }),
+    })
+
+    SuccessResponse({ res, data: 'verfiction email sent' })
+  }
 
   confirmMailAndEnableTwoStepVeffiction = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const { email, otp }: confirmEmailDTO = req.body;
+    const { email, otp }: confirmEmailDTO = req.body
     const emailExists: HydratedDocument<IUser> | null =
-      await this._userModel.userEmailExists({ email });
+      await this._userModel.userEmailExists({ email })
     if (emailExists) {
-      ErrorConflict("email doesn't exists");
+      ErrorConflict("email doesn't exists")
     }
     if (emailExists?.confirmed == true)
-      ErrorConflict("your email is already confirmed");
+      ErrorConflict('your email is already confirmed')
 
     const CachedOtp: string | void = await this._redisServices.getKey({
       key: this._redisServices.cacheKey({
         filter: email,
         subject: mailEnum.consrimSingUp,
       }),
-    });
+    })
     if (!GlobalCompare({ plainText: otp, hashText: CachedOtp as string }))
-      Errorforbidden("wrong otp code");
+      Errorforbidden('wrong otp code')
 
     await this._redisServices.deleteKey({
       key: this._redisServices.cacheKey({
         filter: email,
         subject: mailEnum.consrimSingUp,
       }),
-    });
+    })
 
     await this._userModel.findOneAndUpdate({
-      filter: { "email.data": email },
+      filter: { 'email.data': email },
       update: { confirmed: true, twoStepVerfiction: true },
-    });
+    })
 
-    SuccessResponse({ res, data: "email confirmed" });
-  };
+    SuccessResponse({ res, data: 'email confirmed' })
+  }
 
   signUpAndLoginWithGmail = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const { idToken } = req.body;
+    const { idToken } = req.body
 
-    const Client = new OAuth2Client(O2AUTH_CLIENT_ID);
+    const Client = new OAuth2Client(O2AUTH_CLIENT_ID)
 
     const verifyIdToken: Promise<LoginTicket> = Client.verifyIdToken({
       idToken,
       audience: O2AUTH_CLIENT_ID,
-    });
+    })
 
-    const payload: TokenPayload | undefined = (
-      await verifyIdToken
-    ).getPayload();
+    const payload: TokenPayload | undefined = (await verifyIdToken).getPayload()
 
-    if (!payload) ErrorInteralServerError("invalid token id");
-    const { name, email, email_verified, picture }: any = payload;
+    if (!payload) ErrorInteralServerError('invalid token id')
+    const { name, email, email_verified, picture }: any = payload
 
     let emailExists: HydratedDocument<IUser> | null =
-      await this._userModel.userEmailExists({ email });
+      await this._userModel.userEmailExists({ email })
     if (!emailExists) {
       emailExists = await this._userModel.create({
         userName: name,
-        "email.data": email,
+        'email.data': email,
         provider: providerEnum.google,
         confirmed: email_verified,
-      } as Partial<IUser>);
+      } as Partial<IUser>)
     }
 
     if (emailExists?.provider == providerEnum.system)
-      ErrorConflict("please login throw system");
+      ErrorConflict('please login throw system')
 
-    const { accessToken, refreshToken } = generateTokens(emailExists);
+    const { accessToken, refreshToken } = generateTokens(emailExists)
 
-    SuccessResponse({ res, data: { accessToken, refreshToken } });
-  };
+    SuccessResponse({ res, data: { accessToken, refreshToken } })
+  }
 
   reSendOtp = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const { email }: resendOtpDTO = req.body;
+    const { email }: resendOtpDTO = req.body
 
     const user = await this._userModel.findOne({
-      filter: { "email.data": email },
-    });
+      filter: { 'email.data': email },
+    })
     if (!user) {
-      ErrorConflict("user does not exists");
+      ErrorConflict('user does not exists')
     }
 
     await sendEmail({
       to: email,
       subject: mailEnum.reSendOtp,
       data: genrateOtp(),
-    });
+    })
 
-    SuccessResponse({ res, data: "otp send please confirm your mail" });
-  };
+    SuccessResponse({ res, data: 'otp send please confirm your mail' })
+  }
 
   forgetPassword = async (req: Request, res: Response, next: NextFunction) => {
-    const { email }: forgetPasswordDTO = req.body;
-    console.log(this._userModel);
+    const { email }: forgetPasswordDTO = req.body
+    console.log(this._userModel)
     const userEmailExists: HydratedDocument<IUser> | null =
-      await this._userModel.userEmailExists({ email, confirmed: true });
+      await this._userModel.userEmailExists({ email, confirmed: true })
     if (!userEmailExists) {
-      ErrorConflict("user does not exists");
+      ErrorConflict('user does not exists')
     }
 
     await sendEmail({
       to: email,
       subject: mailEnum.forgetPassword,
       data: genrateOtp(),
-    });
-    SuccessResponse({ res, data: "please confirm your email" });
-  };
+    })
+    SuccessResponse({ res, data: 'please confirm your email' })
+  }
 
   resetPassowrd = async (req: Request, res: Response, next: NextFunction) => {
-    const { email, newPassword, otp }: resetPasswordDTO = req.body;
+    const { email, newPassword, otp }: resetPasswordDTO = req.body
     const userEmailExists: HydratedDocument<IUser> | null =
-      await this._userModel.userEmailExists({ email, confirmed: true });
+      await this._userModel.userEmailExists({ email, confirmed: true })
 
     if (!userEmailExists) {
-      ErrorConflict("email does not exists");
+      ErrorConflict('email does not exists')
     }
     const CachedOtp: string = (await this._redisServices.getKey({
       key: this._redisServices.cacheKey({
         filter: email,
         subject: mailEnum.forgetPassword,
       }),
-    })) as string;
+    })) as string
 
     if (!GlobalCompare({ plainText: otp, hashText: CachedOtp })) {
-      ErrorUnAuthorizedRequest("wrong otp");
+      ErrorUnAuthorizedRequest('wrong otp')
     }
     await this._redisServices.deleteKey({
       key: this._redisServices.cacheKey({
         filter: email,
         subject: mailEnum.forgetPassword,
       }),
-    });
+    })
 
     await this._userModel.findOneAndUpdate({
-      filter: { "email.data": email, confirmed: true },
+      filter: { 'email.data': email, confirmed: true },
       update: {
         password: Globalhash({ plainText: newPassword }),
       },
-    });
+    })
 
-    SuccessResponse({ res, data: "password updated" });
-  };
+    SuccessResponse({ res, data: 'password updated' })
+  }
+
+  generateAccessToken = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    const { authorization } = req.headers
+    const [prefix, token] = authorization!.split(' ')
+
+    if (prefix != TOKEN_USER_PREFIX!) return Errorforbidden('invalid token')
+
+    const verifyToken = TokenVerify({
+      token: token!,
+      secret: SECRET_USER_REFRESH_TOKEN,
+    })
+
+    SuccessResponse({
+      res,
+      data: {
+        accessToken: generateAccessToken({
+          userId: verifyToken.userId! as Schema.Types.ObjectId,
+          role: verifyToken.role as string,
+        }),
+      },
+    })
+  }
 }
 
-export default new auth();
+export default new auth()

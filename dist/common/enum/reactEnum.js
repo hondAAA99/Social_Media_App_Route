@@ -1,7 +1,9 @@
-const reactEnum = {
-    like: 'like',
-    love: 'like',
-    sad: 'like',
-    angry: 'like',
+const reactsEnum = {
+    like: "like",
+    love: "love",
+    sad: "sad",
+    angry: "angry",
+    care: "care",
+    wow: "wow",
 };
-export default reactEnum;
+export default reactsEnum;

@@ -44,7 +44,7 @@ export function generateRefreshToken({
     },
   );
 }
-export const accessTokenVerify = ({
+export const TokenVerify = ({
   token,
   secret,
 }: {

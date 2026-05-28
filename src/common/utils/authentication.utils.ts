@@ -5,7 +5,7 @@ import {
   TOKEN_ADMIN_PREFIX,
   TOKEN_USER_PREFIX,
 } from "../../config/config.services.js";
-import { accessTokenVerify } from "../security/jsonWebTokens.js";
+import { TokenVerify } from "../security/jsonWebTokens.js";
 import {
   ErrorConflict,
   Errorforbidden,
@@ -32,7 +32,7 @@ async function authenticateUtilts(authorization: string) {
     return Errorforbidden("invalid token");
   })();
 
-  const verify: jsonwebtoken.JwtPayload = accessTokenVerify({
+  const verify: jsonwebtoken.JwtPayload = TokenVerify({
     token,
     secret,
   }) as jsonwebtoken.JwtPayload;

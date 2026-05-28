@@ -1,26 +1,17 @@
-import { GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
-// import GqlAuthFields from "../auth/graphql/fields.js"; // Not used
-import GqlUserFields from "../user/graphql/fields.js";
+import { GraphQLObjectType, GraphQLSchema } from 'graphql'
+import GqlUserFields from '../user/graphql/fields.js'
+import GLpostsFields from '../posts/graphQL/fields.js'
+import GLCommentFields from '../comment/graphql/fields.js'
 
 const GQLSchema = new GraphQLSchema({
   query: new GraphQLObjectType({
-    name: "query",
+    name: 'query',
     fields: {
-      getUserData : GqlUserFields.getUserDataAndPosts(),
+      getUserData: GqlUserFields.getUserData(),
+      getPostsData: GLpostsFields.getAllUserPosts(),
+      getPostComments: GLCommentFields.getComments(),
     },
   }),
-});
+})
 
-// const GQLSchema = new GraphQLSchema({
-//   query: new GraphQLObjectType({
-//     name: "query",
-//     fields: {
-//       ping: {
-//         type: GraphQLString,
-//         resolve: () => "pong",
-//       },
-//     },
-//   }),
-// });
-
-export default GQLSchema;
+export default GQLSchema

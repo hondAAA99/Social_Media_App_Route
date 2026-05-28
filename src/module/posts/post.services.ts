@@ -3,6 +3,7 @@ import postModel, { IPost } from "../../DB/models/post.model.js";
 import {
   ErrorConflict,
   ErrorInteralServerError,
+  ErrorNotFound,
   SuccessResponse,
 } from "../../common/utils/globalresponse.js";
 import postRepo from "../../DB/repo/post.repo.js";
@@ -21,6 +22,7 @@ import {
 } from "mongoose";
 import fireBaseServices from "../../common/services/fireBase.services.js";
 import { postAvailbilty, searchQuery } from "../../common/utils/postUtils.js";
+import reactsEnum from "../../common/enum/reactEnum.js";
 
 class postServices {
   private readonly _postModel = new postRepo();
@@ -31,8 +33,13 @@ class postServices {
   constructor() {}
 
   createPost = async (req: Request, res: Response, next: NextFunction) => {
-    const { availablity, content, tags, allowComments }: createPostDTO =
-      req.body;
+    const {
+      availablity,
+      content,
+      tags,
+      allowComments,
+      hideLikeCount,
+    }: createPostDTO = req.body;
     const { user } = req;
     let mentionsArr;
     let fcmArr: string[] = [];
@@ -93,6 +100,8 @@ class postServices {
         },
       });
 
+      post.reacts.reactAviliablity = hideLikeCount;
+
       SuccessResponse({ res, data: post });
     }
   };
@@ -122,32 +131,87 @@ class postServices {
 
   likePost = async (req: Request, res: Response, next: NextFunction) => {
     const postId = req.params.postId;
-
     const { flag } = req.query;
+    const { user } = req;
+    const post = await this._postModel.findById({ id: postId });
+    if (!post) return ErrorNotFound("post not found");
 
-    let queryFilter: QueryFilter<IPost> = {
-      $addToSet: { likes: req?.user?._id! },
-    };
-
-    if (flag == "disLike") {
-      queryFilter = {
-        $pull: { likes: req?.user?._id! },
-      };
-    }
-
-    const post = this._postModel.findOneAndUpdate({
-      filter: {
-        id: new Schema.Types.ObjectId(postId as string),
-        createdBy: new Schema.Types.ObjectId(req?.user?.id as string),
-      },
+    const reactPath = `reacts.reactsCount.${flag}`;
+    await this._postModel.findByIdAndUpdate({
+      id: postId,
       update: {
-        likes: queryFilter,
+        $inc: { reactPath: 1, " reacts.reactsCount.total": 1 },
       },
     });
+    post.reacts.reactedUsers.push({
+      userId: user?.id!,
+      react: flag as string,
+    });
+    await post.save();
 
-    if (!post) {
-      ErrorInteralServerError("failed to like the post");
-    }
+    // switch (flag) {
+    //   case reactsEnum.like:
+    //     post.reacts.reactsCount.like += 1;
+    //     post.reacts.reactsCount.total += 1;
+    //     post.reacts.reactedUsers.userId = user?.id!;
+    //     post.reacts.reactedUsers.react = reactsEnum.like;
+    //     break;
+    //   case reactsEnum.angry:
+    //     post.reacts.reactsCount.angry += 1;
+    //     post.reacts.reactsCount.total += 1;
+    //     post.reacts.reactedUsers.userId = user?.id!;
+    //     post.reacts.reactedUsers.react = reactsEnum.like;
+    //     break;
+    //   case reactsEnum.sad:
+    //     post.reacts.reactsCount.sad += 1;
+    //     post.reacts.reactsCount.total += 1;
+    //     post.reacts.reactedUsers.userId = user?.id!;
+    //     post.reacts.reactedUsers.react = reactsEnum.like;
+    //     break;
+    //   case reactsEnum.love:
+    //     post.reacts.reactsCount.love += 1;
+    //     post.reacts.reactsCount.total += 1;
+    //     post.reacts.reactedUsers.userId = user?.id!;
+    //     post.reacts.reactedUsers.react = reactsEnum.like;
+    //     break;
+    //   case reactsEnum.care:
+    //     post.reacts.reactsCount.care += 1;
+    //     post.reacts.reactsCount.total += 1;
+    //     post.reacts.reactedUsers.userId = user?.id!;
+    //     post.reacts.reactedUsers.react = reactsEnum.like;
+    //     break;
+    //   case reactsEnum.wow:
+    //     post.reacts.reactsCount.wow += 1;
+    //     post.reacts.reactsCount.total += 1;
+    //     post.reacts.reactedUsers.userId = user?.id!;
+    //     post.reacts.reactedUsers.react = reactsEnum.like;
+    //     break;
+    // }
+    // await post.save()
+
+    // let queryFilter: QueryFilter<IPost> = {
+    //   $addToSet: { likes: req?.user?._id! },
+    // };
+
+    // if (flag == "disLike") {
+    //   queryFilter = {
+    //     $pull: { likes: req?.user?._id! },
+    //   };
+    // }
+
+    // const post = this._postModel.findOneAndUpdate({
+    //   filter: {
+    //     id: postId!,
+    //     createdBy: req?.user?.id!,
+    //   },
+    //   update: {
+    //     likes: queryFilter,
+    //   },
+    // });
+
+    // if (!post) {
+    //   ErrorInteralServerError("failed to like the post");
+    // }
 
     SuccessResponse({ res, data: "like!" });
   };
@@ -162,6 +226,7 @@ class postServices {
       tags,
       removeFiles,
       removeTags,
+      hideLikeCount,
     }: updatePostDTO = req.body;
 
     const post = await this._postModel.findOne({
@@ -239,9 +304,10 @@ class postServices {
       });
     }
 
-    if (content) post!.content = content as string;
-    if (availability) post!.availablity = availability as string;
-    if (allowComment) post!.allowComments = allowComment as string;
+    if (content) post!.content = content;
+    if (availability) post!.availablity = availability;
+    if (allowComment) post!.allowComments = allowComment;
+    if (hideLikeCount) post!.reacts.reactAviliablity = hideLikeCount;
 
     await post!.save();
 

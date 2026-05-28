@@ -1,52 +1,60 @@
-import {
-  ErrorConflict,
-  SuccessResponse,
-} from "../../common/utils/globalresponse.js";
-import postRepo from "../../DB/repo/post.repo.js";
-import userRepo from "../../DB/repo/user.repo.js";
-import type { Request, Response, NextFunction } from "express";
-import postServices from "../posts/post.services.js";
-import { Schema } from "mongoose";
-import { postAvailbilty } from "../../common/utils/postUtils.js";
+import { NextFunction, Response, Request } from 'express'
+import userRepo from '../../DB/repo/user.repo.js'
+import storyRepo from '../../DB/repo/story.repo.js'
+import { friendsFlagEnum } from '../../common/enum/friendsFlag.enum.js'
+import { postAvailbilty } from '../../common/utils/postUtils.js'
+import postRepo from '../../DB/repo/post.repo.js'
+import { SuccessResponse } from '../../common/utils/globalresponse.js'
 
 class newsFeed {
-  private readonly _userModel = new userRepo();
-  private readonly _postModel = new postRepo();
-  private readonly _postServices = postServices;
+  private readonly _userModel = new userRepo()
+  private readonly _storyModel = new storyRepo()
+  private readonly _postModel = new postRepo()
+
   constructor() {}
 
   getFeed = async (req: Request, res: Response, next: NextFunction) => {
-    const { user } = req;
-    const { limit, page } = req.query;
-    const friends = user?.friends;
+    const { user } = req
+    const userFriendsData = (await this._userModel.findById({
+      id: user!.id,
+      projection: 'friends.data',
+    })) as Array<any> | null
 
-    const posts = this._postModel.paginate({
-      search: {
-        createdBy: { $in: friends || [] },
-        availiabilty: postAvailbilty(req),
-      },
-      limit: +limit!,
-      page: +page!,
-    });
+    if (userFriendsData) {
+      const userAcceptedFriends = userFriendsData.map(f => {
+        return f.flag == friendsFlagEnum.friend ? f.friendId : undefined
+      })
 
-    SuccessResponse({ res, data: posts });
-  };
+      const stories = await this._storyModel.findAll({
+        filter: {
+          userId: { $in: [...userAcceptedFriends] },
+        },
+      })
 
-  postReact = async (req: Request, res: Response, next: NextFunction) => {
-    const { postId } = req.params;
-    const { user } = req;
-    const post = await this._postModel.findOne({
-      filter: {
-        id: postId as Schema.Types.ObjectId,
-        $or: [...postAvailbilty(req)],
-      },
-    });
-    if (!post) return ErrorConflict("post does not eists");
-    post.reactCount = (post?.reactCount as number) + 1;
-    post?.reactedUsers?.push(user!.id);
+      const posts = await this._postModel.paginate({
+        page: Number(req?.query?.page!),
+        limit: Number(req?.query?.limit!),
+        search: {
+          $or: [...postAvailbilty(req)],
+        },
+        populate: [
+          {
+            path: 'comments',
+            match: {
+              commentId: { $exists: false },
+            },
+            populate: {
+              path: 'replies',
+            },
+          },
+        ],
+      })
 
-    await post!.save();
-  };
+      SuccessResponse({ res, data: { stories, posts } })
+    }
+
+    SuccessResponse({res , data : 'add friends to see them on feed'})
+  }
 }
 
-export default new newsFeed();
+export default new newsFeed()

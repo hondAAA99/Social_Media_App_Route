@@ -1,30 +1,35 @@
-import mongoose, { model, Schema } from "mongoose";
-import roleEnum from "../../common/enum/role.enum.js";
-import genderEnum from "../../common/enum/gender.enum.js";
-import providerEnum from "../../common/enum/provider.enum.js";
-import availabiltyEnum from "../../common/enum/availablity.enum.js";
+import mongoose, { model, Schema } from 'mongoose'
+import roleEnum from '../../common/enum/role.enum.js'
+import genderEnum from '../../common/enum/gender.enum.js'
+import providerEnum from '../../common/enum/provider.enum.js'
+import availabiltyEnum from '../../common/enum/availablity.enum.js'
+import { friendsFlagEnum } from '../../common/enum/friendsFlag.enum.js'
 
 export interface IUser {
-  id?: Schema.Types.ObjectId;
-  firstName: string;
-  lastName: string;
-  userName: string;
-  email: { data: string; availibilty: string };
-  profilePicture?: String;
-  friends: { data: Schema.Types.ObjectId[]; availibilty: string };
-  phone?: { data: string; availibilty: string };
-  age?: { data: Date; availibilty: string };
-  gender?: { data: string; availibilty: string };
-  profileLock?: boolean;
-  role?: string;
-  password: string;
-  createdAt: Date;
-  updatedAt: Date;
-  confirmed?: boolean | undefined;
-  provider?: string;
-  deletedAt?: Date;
-  twoStepVerfiction: boolean;
-  creadnatials?: Date;
+  id?: Schema.Types.ObjectId
+  firstName: string
+  lastName: string
+  userName: string
+  email: { data: string; availibilty: string }
+  profilePicture?: String
+  friends: {
+    availibilty: string
+    data: Array<{ friendId: Schema.Types.ObjectId; flag: string }>
+  }
+  phone?: { data: string; availibilty: string }
+  age?: { data: Date; availibilty: string }
+  gender?: { data: string; availibilty: string }
+  profileLock?: boolean
+  blockedUsers: Schema.Types.ObjectId[]
+  role?: string
+  password: string
+  createdAt: Date
+  updatedAt: Date
+  confirmed?: boolean | undefined
+  provider?: string
+  deletedAt?: Date
+  twoStepVerfiction: boolean
+  creadnatials?: Date
 }
 
 const userSchema = new Schema<IUser>(
@@ -43,7 +48,7 @@ const userSchema = new Schema<IUser>(
     password: {
       type: String,
       required: function (this: any): boolean {
-        return this.provider === providerEnum.system;
+        return this.provider === providerEnum.system
       },
     },
     role: {
@@ -71,11 +76,11 @@ const userSchema = new Schema<IUser>(
         availibilty: { type: String, enum: Object.values(availabiltyEnum) },
       }),
       default: {
-        data: "",
+        data: '',
         availibilty: availabiltyEnum.onlyMe,
       },
       required: function (this: any): boolean {
-        return this.provider === providerEnum.system;
+        return this.provider === providerEnum.system
       },
     },
     age: {
@@ -88,7 +93,7 @@ const userSchema = new Schema<IUser>(
         availibilty: availabiltyEnum.onlyMe,
       },
       required: function (this: any): boolean {
-        return this.provider === providerEnum.system;
+        return this.provider === providerEnum.system
       },
     },
     confirmed: { type: Boolean, default: false },
@@ -104,17 +109,29 @@ const userSchema = new Schema<IUser>(
         availibilty: availabiltyEnum.public,
       },
       required: function (this: any): boolean {
-        return this.provider === providerEnum.system;
+        return this.provider === providerEnum.system
       },
     },
     creadnatials: { type: Date },
     deletedAt: { type: Date },
     friends: {
       type: new Schema({
-        data: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        availibilty: { type: [String], enum: Object.values(availabiltyEnum) },
+        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+        data: {
+          type: Array(
+            new Schema({
+              flag: {
+                type: String,
+                enum: Object.values(friendsFlagEnum),
+                default: friendsFlagEnum.requestd,
+              },
+              friendId: { type: Schema.Types.ObjectId, ref: 'users' },
+            }),
+          ),
+        },
       }),
     },
+    blockedUsers: { type: [Schema.Types.ObjectId] },
     twoStepVerfiction: { type: Boolean, default: false },
   },
   {
@@ -124,34 +141,34 @@ const userSchema = new Schema<IUser>(
     toObject: {},
     toJSON: {},
   },
-);
+)
 
 userSchema
-  .virtual("userName")
+  .virtual('userName')
   .set(function (value) {
-    const [fn, ln] = value.split(" ");
-    this.firstName = fn;
-    this.lastName = ln;
+    const [fn, ln] = value.split(' ')
+    this.firstName = fn
+    this.lastName = ln
   })
   .get(function (this) {
-    return this.firstName + " " + this.lastName;
-  });
+    return this.firstName + ' ' + this.lastName
+  })
 
-userSchema.pre(["findOne", "find"], function () {
-  const query = this.getQuery();
-  const { paranoid, ...rest } = query;
+userSchema.pre(['findOne', 'find'], function () {
+  const query = this.getQuery()
+  const { paranoid, ...rest } = query
   if (paranoid === true) {
-    this.setQuery({ deletedAt: { $exists: false }, ...rest });
+    this.setQuery({ deletedAt: { $exists: false }, ...rest })
   } else {
-    this.setQuery({ ...rest });
+    this.setQuery({ ...rest })
   }
-});
+})
 
 userSchema.pre(
-  ["deleteMany", "deleteOne", "findOneAndDelete"],
+  ['deleteMany', 'deleteOne', 'findOneAndDelete'],
   async function () {
-    const condition = this.getQuery();
-    const userId = condition._id;
+    const condition = this.getQuery()
+    const userId = condition._id
     await Promise.all([
       mongoose.models.users!.findByIdAndUpdate(userId, {
         deletedAt: Date.now(),
@@ -168,10 +185,12 @@ userSchema.pre(
         },
         { deletedAt: Date.now() },
       ),
-    ]);
+    ])
   },
-);
+)
 
-const userModel = mongoose.models.users || model("users", userSchema);
+userSchema.index({ 'story.createdAt': 1 }, { expireAfterSeconds: 0 })
 
-export default userModel;
+const userModel = mongoose.models.users || model('users', userSchema)
+
+export default userModel
