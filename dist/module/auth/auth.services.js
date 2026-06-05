@@ -1,16 +1,17 @@
-import { ErrorConflict, Errorforbidden, ErrorInteralServerError, ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import userRepo from "../../DB/repo/user.repo.js";
-import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
-import { Globalencrypt } from "../../common/security/encrypt.js";
-import { sendEmail } from "../../common/utils/email/sendEmail.js";
-import mailEnum from "../../common/enum/mail.enum.js";
-import { genrateOtp } from "../../common/utils/email/nodeMailer.js";
-import { generateTokens } from "./services.helpers.js";
-import redisServices from "../../common/services/redis.services.js";
-import { O2AUTH_CLIENT_ID } from "../../config/config.services.js";
-import { OAuth2Client } from "google-auth-library";
-import providerEnum from "../../common/enum/provider.enum.js";
-import fireBaseServices from "../../common/services/fireBase.services.js";
+import { ErrorConflict, Errorforbidden, ErrorInteralServerError, ErrorUnAuthorizedRequest, SuccessResponse, } from '../../common/utils/globalresponse.js';
+import userRepo from '../../DB/repo/user.repo.js';
+import { GlobalCompare, Globalhash } from '../../common/security/hash.js';
+import { Globalencrypt } from '../../common/security/encrypt.js';
+import { sendEmail } from '../../common/utils/email/sendEmail.js';
+import mailEnum from '../../common/enum/mail.enum.js';
+import { genrateOtp } from '../../common/utils/email/nodeMailer.js';
+import { generateTokens } from './services.helpers.js';
+import redisServices from '../../common/services/redis.services.js';
+import { O2AUTH_CLIENT_ID, SECRET_USER_REFRESH_TOKEN, TOKEN_USER_PREFIX, } from '../../config/config.services.js';
+import { OAuth2Client } from 'google-auth-library';
+import providerEnum from '../../common/enum/provider.enum.js';
+import fireBaseServices from '../../common/services/fireBase.services.js';
+import { generateAccessToken, TokenVerify, } from '../../common/security/jsonWebTokens.js';
 class auth {
     _userModel = new userRepo();
     _fireBase = new fireBaseServices();
@@ -20,22 +21,22 @@ class auth {
         const { userName, email, password, phone, gender, DateOfBirth } = req.body;
         const emailExists = await this._userModel.userEmailExists({ email });
         if (emailExists) {
-            ErrorConflict("email already exists");
+            ErrorConflict('email already exists');
         }
         const user = await this._userModel.create({
             userName,
-            "email.data": email,
+            'email.data': email,
             password: Globalhash({ plainText: password }),
-            "age.data": DateOfBirth,
-            "phone.data": phone ? Globalencrypt({ plainText: phone }) : null,
-            "gender.data": gender,
+            'age.data': DateOfBirth,
+            'phone.data': phone ? Globalencrypt({ plainText: phone }) : null,
+            'gender.data': gender,
         });
         await sendEmail({
             to: email,
             subject: mailEnum.consrimSingUp,
             data: genrateOtp(),
         });
-        SuccessResponse({ res, data: "please confirm your email" });
+        SuccessResponse({ res, data: 'please confirm your email' });
     };
     logIn = async (req, res, next) => {
         const { email, password, fcm } = req.body;
@@ -44,13 +45,13 @@ class auth {
             ErrorConflict("email doesn't exists");
         }
         if (!emailExists)
-            ErrorConflict("email does not exists or confirmed");
+            ErrorConflict('email does not exists or confirmed');
         if (!GlobalCompare({ plainText: password, hashText: emailExists.password })) {
-            Errorforbidden("wrong password");
+            Errorforbidden('wrong password');
         }
         const data = function () {
             if (emailExists?.twoStepVerfiction == true) {
-                return "please confirm your login";
+                return 'please confirm your login';
             }
             else {
                 return generateTokens(emailExists);
@@ -65,7 +66,7 @@ class auth {
             ErrorConflict("email doesn't exists");
         }
         if (emailExists?.confirmed == true)
-            ErrorConflict("your email is already confirmed");
+            ErrorConflict('your email is already confirmed');
         const CachedOtp = await this._redisServices.getKey({
             key: this._redisServices.cacheKey({
                 filter: email,
@@ -73,7 +74,7 @@ class auth {
             }),
         });
         if (!GlobalCompare({ plainText: otp, hashText: CachedOtp }))
-            Errorforbidden("wrong otp code");
+            Errorforbidden('wrong otp code');
         await this._redisServices.deleteKey({
             key: this._redisServices.cacheKey({
                 filter: email,
@@ -88,10 +89,10 @@ class auth {
     EnableTwoStepVerfiction = async (req, res, next) => {
         const { email } = req.body;
         const emailExists = await this._userModel.findOne({
-            filter: { "email.data": email },
+            filter: { 'email.data': email },
         });
         if (!emailExists)
-            ErrorConflict("email does not exists");
+            ErrorConflict('email does not exists');
         await sendEmail({
             to: email,
             subject: mailEnum.twoStepVerfiction,
@@ -99,7 +100,7 @@ class auth {
                 plainText: Math.ceil(Math.random() * 10000).toString(),
             }),
         });
-        SuccessResponse({ res, data: "verfiction email sent" });
+        SuccessResponse({ res, data: 'verfiction email sent' });
     };
     confirmMailAndEnableTwoStepVeffiction = async (req, res, next) => {
         const { email, otp } = req.body;
@@ -108,7 +109,7 @@ class auth {
             ErrorConflict("email doesn't exists");
         }
         if (emailExists?.confirmed == true)
-            ErrorConflict("your email is already confirmed");
+            ErrorConflict('your email is already confirmed');
         const CachedOtp = await this._redisServices.getKey({
             key: this._redisServices.cacheKey({
                 filter: email,
@@ -116,7 +117,7 @@ class auth {
             }),
         });
         if (!GlobalCompare({ plainText: otp, hashText: CachedOtp }))
-            Errorforbidden("wrong otp code");
+            Errorforbidden('wrong otp code');
         await this._redisServices.deleteKey({
             key: this._redisServices.cacheKey({
                 filter: email,
@@ -124,10 +125,10 @@ class auth {
             }),
         });
         await this._userModel.findOneAndUpdate({
-            filter: { "email.data": email },
+            filter: { 'email.data': email },
             update: { confirmed: true, twoStepVerfiction: true },
         });
-        SuccessResponse({ res, data: "email confirmed" });
+        SuccessResponse({ res, data: 'email confirmed' });
     };
     signUpAndLoginWithGmail = async (req, res, next) => {
         const { idToken } = req.body;
@@ -138,56 +139,56 @@ class auth {
         });
         const payload = (await verifyIdToken).getPayload();
         if (!payload)
-            ErrorInteralServerError("invalid token id");
+            ErrorInteralServerError('invalid token id');
         const { name, email, email_verified, picture } = payload;
         let emailExists = await this._userModel.userEmailExists({ email });
         if (!emailExists) {
             emailExists = await this._userModel.create({
                 userName: name,
-                "email.data": email,
+                'email.data': email,
                 provider: providerEnum.google,
                 confirmed: email_verified,
             });
         }
         if (emailExists?.provider == providerEnum.system)
-            ErrorConflict("please login throw system");
+            ErrorConflict('please login throw system');
         const { accessToken, refreshToken } = generateTokens(emailExists);
         SuccessResponse({ res, data: { accessToken, refreshToken } });
     };
     reSendOtp = async (req, res, next) => {
         const { email } = req.body;
         const user = await this._userModel.findOne({
-            filter: { "email.data": email },
+            filter: { 'email.data': email },
         });
         if (!user) {
-            ErrorConflict("user does not exists");
+            ErrorConflict('user does not exists');
         }
         await sendEmail({
             to: email,
             subject: mailEnum.reSendOtp,
             data: genrateOtp(),
         });
-        SuccessResponse({ res, data: "otp send please confirm your mail" });
+        SuccessResponse({ res, data: 'otp send please confirm your mail' });
     };
     forgetPassword = async (req, res, next) => {
         const { email } = req.body;
         console.log(this._userModel);
         const userEmailExists = await this._userModel.userEmailExists({ email, confirmed: true });
         if (!userEmailExists) {
-            ErrorConflict("user does not exists");
+            ErrorConflict('user does not exists');
         }
         await sendEmail({
             to: email,
             subject: mailEnum.forgetPassword,
             data: genrateOtp(),
         });
-        SuccessResponse({ res, data: "please confirm your email" });
+        SuccessResponse({ res, data: 'please confirm your email' });
     };
     resetPassowrd = async (req, res, next) => {
         const { email, newPassword, otp } = req.body;
         const userEmailExists = await this._userModel.userEmailExists({ email, confirmed: true });
         if (!userEmailExists) {
-            ErrorConflict("email does not exists");
+            ErrorConflict('email does not exists');
         }
         const CachedOtp = (await this._redisServices.getKey({
             key: this._redisServices.cacheKey({
@@ -196,7 +197,7 @@ class auth {
             }),
         }));
         if (!GlobalCompare({ plainText: otp, hashText: CachedOtp })) {
-            ErrorUnAuthorizedRequest("wrong otp");
+            ErrorUnAuthorizedRequest('wrong otp');
         }
         await this._redisServices.deleteKey({
             key: this._redisServices.cacheKey({
@@ -205,12 +206,31 @@ class auth {
             }),
         });
         await this._userModel.findOneAndUpdate({
-            filter: { "email.data": email, confirmed: true },
+            filter: { 'email.data': email, confirmed: true },
             update: {
                 password: Globalhash({ plainText: newPassword }),
             },
         });
-        SuccessResponse({ res, data: "password updated" });
+        SuccessResponse({ res, data: 'password updated' });
+    };
+    generateAccessToken = async (req, res, next) => {
+        const { authorization } = req.headers;
+        const [prefix, token] = authorization.split(' ');
+        if (prefix != TOKEN_USER_PREFIX)
+            return Errorforbidden('invalid token');
+        const verifyToken = TokenVerify({
+            token: token,
+            secret: SECRET_USER_REFRESH_TOKEN,
+        });
+        SuccessResponse({
+            res,
+            data: {
+                accessToken: generateAccessToken({
+                    userId: verifyToken.userId,
+                    role: verifyToken.role,
+                }),
+            },
+        });
     };
 }
 export default new auth();

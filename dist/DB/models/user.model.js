@@ -1,9 +1,9 @@
-import mongoose, { model, Schema } from "mongoose";
-import roleEnum from "../../common/enum/role.enum.js";
-import genderEnum from "../../common/enum/gender.enum.js";
-import providerEnum from "../../common/enum/provider.enum.js";
-import availabiltyEnum from "../../common/enum/availablity.enum.js";
-import { friendsFlagEnum } from "../../common/enum/friendsFlag.enum.js";
+import mongoose, { model, Schema } from 'mongoose';
+import roleEnum from '../../common/enum/role.enum.js';
+import genderEnum from '../../common/enum/gender.enum.js';
+import providerEnum from '../../common/enum/provider.enum.js';
+import availabiltyEnum from '../../common/enum/availablity.enum.js';
+import { friendsFlagEnum } from '../../common/enum/friendsFlag.enum.js';
 const userSchema = new Schema({
     profileLock: { type: Boolean, default: false },
     firstName: { type: String, required: true },
@@ -27,14 +27,6 @@ const userSchema = new Schema({
         default: roleEnum.user,
         enum: Object.values(roleEnum),
     },
-    story: {
-        type: [
-            new Schema({
-                url: { type: String },
-                createdAt: { type: Date },
-            }),
-        ],
-    },
     gender: {
         type: new Schema({
             data: {
@@ -55,7 +47,7 @@ const userSchema = new Schema({
             availibilty: { type: String, enum: Object.values(availabiltyEnum) },
         }),
         default: {
-            data: "",
+            data: '',
             availibilty: availabiltyEnum.onlyMe,
         },
         required: function () {
@@ -103,7 +95,7 @@ const userSchema = new Schema({
                         enum: Object.values(friendsFlagEnum),
                         default: friendsFlagEnum.requestd,
                     },
-                    friendId: { type: Schema.Types.ObjectId, ref: "users" },
+                    friendId: { type: Schema.Types.ObjectId, ref: 'users' },
                 })),
             },
         }),
@@ -117,16 +109,17 @@ const userSchema = new Schema({
     toObject: {},
     toJSON: {},
 });
-userSchema.virtual("userName")
+userSchema
+    .virtual('userName')
     .set(function (value) {
-    const [fn, ln] = value.split(" ");
+    const [fn, ln] = value.split(' ');
     this.firstName = fn;
     this.lastName = ln;
 })
     .get(function () {
-    return this.firstName + " " + this.lastName;
+    return this.firstName + ' ' + this.lastName;
 });
-userSchema.pre(["findOne", "find"], function () {
+userSchema.pre(['findOne', 'find'], function () {
     const query = this.getQuery();
     const { paranoid, ...rest } = query;
     if (paranoid === true) {
@@ -136,7 +129,7 @@ userSchema.pre(["findOne", "find"], function () {
         this.setQuery({ ...rest });
     }
 });
-userSchema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], async function () {
+userSchema.pre(['deleteMany', 'deleteOne', 'findOneAndDelete'], async function () {
     const condition = this.getQuery();
     const userId = condition._id;
     await Promise.all([
@@ -151,6 +144,6 @@ userSchema.pre(["deleteMany", "deleteOne", "findOneAndDelete"], async function (
         }, { deletedAt: Date.now() }),
     ]);
 });
-userSchema.index({ "story.createdAt": 1 }, { expireAfterSeconds: 0 });
-const userModel = mongoose.models.users || model("users", userSchema);
+userSchema.index({ 'story.createdAt': 1 }, { expireAfterSeconds: 0 });
+const userModel = mongoose.models.users || model('users', userSchema);
 export default userModel;

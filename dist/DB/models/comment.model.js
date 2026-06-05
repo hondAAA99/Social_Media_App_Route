@@ -1,10 +1,10 @@
-import mongoose, { Schema } from "mongoose";
-import onModelEnum from "../../common/enum/onModel.enum.js";
+import mongoose, { Schema } from 'mongoose';
+import onModelEnum from '../../common/enum/onModel.enum.js';
 const commentSchema = new Schema({
     createdBy: {
         type: Schema.Types.ObjectId,
         required: true,
-        ref: "users",
+        ref: 'users',
     },
     content: {
         type: String,
@@ -19,13 +19,40 @@ const commentSchema = new Schema({
         },
     },
     tags: [{ type: Schema.Types.ObjectId }],
-    refId: { type: Schema.Types.ObjectId, refPath: "onModel", required: true },
+    refId: { type: Schema.Types.ObjectId, refPath: 'onModel', required: true },
     onModel: { type: String, enum: onModelEnum, required: true },
+    reacts: {
+        type: new Schema({
+            reactsCount: {
+                type: new Schema({
+                    total: { type: Number },
+                    like: { type: Number },
+                    love: { type: Number },
+                    sad: { type: Number },
+                    angry: { type: Number },
+                    care: { type: Number },
+                    wow: { type: Number },
+                }),
+            },
+            reactedUsers: {
+                type: [
+                    new Schema({
+                        userId: Schema.Types.ObjectId,
+                        react: String,
+                    }),
+                ],
+            },
+        }),
+    },
+    hideComment: {
+        type: Boolean,
+        default: false
+    }
 });
-commentSchema.virtual("replies", {
-    ref: "comment",
-    localField: "_id",
-    foreignField: "refId",
+commentSchema.virtual('replies', {
+    ref: 'comment',
+    localField: '_id',
+    foreignField: 'refId',
 });
-const commentModel = mongoose.models.messages || mongoose.model("messages", commentSchema);
+const commentModel = mongoose.models.messages || mongoose.model('messages', commentSchema);
 export default commentModel;

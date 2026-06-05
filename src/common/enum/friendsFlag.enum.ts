@@ -5,5 +5,5 @@ export const friendsFlagEnum = {
 };
 export const friendsRequestEnum = {
   accept: "accept-request",
-  decline: "decline-request",
+  reject: "reject-request",
 };

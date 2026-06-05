@@ -16,6 +16,6 @@ export function generateRefreshToken({ userId, role, }) {
         expiresIn: "10h",
     });
 }
-export const accessTokenVerify = ({ token, secret, }) => {
+export const TokenVerify = ({ token, secret, }) => {
     return jsonwebtoken.verify(token, secret);
 };

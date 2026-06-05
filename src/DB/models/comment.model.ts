@@ -1,6 +1,26 @@
 import mongoose, { Schema } from 'mongoose'
 import onModelEnum from '../../common/enum/onModel.enum.js'
 
+interface IReactCount {
+  total: number
+  like: number
+  love: number
+  sad: number
+  angry: number
+  care: number
+  wow: number
+}
+
+interface IReactedUser {
+  userId: Schema.Types.ObjectId
+  react: string
+}
+
+interface IReacts {
+  reactsCount: IReactCount
+  reactedUsers: IReactedUser[]
+}
+
 export interface IComment {
   id: Schema.Types.ObjectId
   content: string | undefined
@@ -10,25 +30,40 @@ export interface IComment {
   folderId: string
   refId: Schema.Types.ObjectId
   onModel: string
-  reacts: {
-    reactsCount: {
-      total: number
-      like: number
-      love: number
-      sad: number
-      angry: number
-      care: number
-      wow: number
-    }
-    reactedUsers: {
-      userId: Schema.Types.ObjectId
-      react: string
-    }[]
-  };
-  hideComment : boolean ;
+  reacts: IReacts
+  hideComment: boolean
 }
 
+const reactCountSchema = new Schema<IReactCount>({
+  total: { type: Number },
+  like: { type: Number },
+  love: { type: Number },
+  sad: { type: Number },
+  angry: { type: Number },
+  care: { type: Number },
+  wow: { type: Number },
+})
+
+const reactedUserSchema = new Schema<IReactedUser>({
+  userId: Schema.Types.ObjectId,
+  react: String,
+})
+
+const reactsSchema = new Schema<IReacts>({
+  reactsCount: reactCountSchema,
+  reactedUsers: {
+    type: [reactedUserSchema],
+  },
+})
+
 const commentSchema = new Schema<IComment>({
+  tags: [{ type: Schema.Types.ObjectId }],
+  attachments: {
+    type: [String],
+    required: function (this) {
+      return this.content ? false : true
+    },
+  },
   createdBy: {
     type: Schema.Types.ObjectId,
     required: true,
@@ -40,42 +75,14 @@ const commentSchema = new Schema<IComment>({
       return this.attachments ? false : true
     },
   },
-  attachments: {
-    type: [String],
-    required: function (this) {
-      return this.content ? false : true
-    },
-  },
-  tags: [{ type: Schema.Types.ObjectId }],
   refId: { type: Schema.Types.ObjectId, refPath: 'onModel', required: true },
   onModel: { type: String, enum: onModelEnum, required: true },
-  reacts: {
-    type: new Schema({
-      reactsCount: {
-        type: new Schema({
-          total: { type: Number },
-          like: { type: Number },
-          love: { type: Number },
-          sad: { type: Number },
-          angry: { type: Number },
-          care: { type: Number },
-          wow: { type: Number },
-        }),
-      },
-      reactedUsers: {
-        type: [
-          new Schema({
-            userId: Schema.Types.ObjectId,
-            react: String,
-          }),
-        ],
-      },
-    }),
+  folderId: { type: String },
+  reacts: reactsSchema,
+  hideComment: {
+    type: Boolean,
+    default: false,
   },
-  hideComment : {
-    type : Boolean ,
-    default : false
-  }
 })
 
 commentSchema.virtual('replies', {

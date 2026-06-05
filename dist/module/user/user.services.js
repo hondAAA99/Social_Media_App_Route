@@ -1,48 +1,50 @@
-import userRepo from "../../DB/repo/user.repo.js";
-import { ErrorConflict, Errorforbidden, ErrorNotFound, ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import redisServices from "../../common/services/redis.services.js";
-import { GlobalCompare, Globalhash } from "../../common/security/hash.js";
-import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
-import s3Services from "../../common/services/s3Services.js";
-import postRepo from "../../DB/repo/post.repo.js";
-import { Globalencrypt } from "../../common/security/encrypt.js";
-import { postAvailbilty } from "../../common/utils/postUtils.js";
-import availabiltyEnum from "../../common/enum/availablity.enum.js";
-import { friendsFlagEnum, friendsRequestEnum, } from "../../common/enum/friendsFlag.enum.js";
-import fireBaseServices from "../../common/services/fireBase.services.js";
-import { sendEmail } from "../../common/utils/email/sendEmail.js";
-import mailEnum from "../../common/enum/mail.enum.js";
-import blockUserEnum from "../../common/enum/blockUser.enum.js";
+import userRepo from '../../DB/repo/user.repo.js';
+import { ErrorConflict, Errorforbidden, ErrorNotFound, ErrorUnAuthorizedRequest, SuccessResponse, } from '../../common/utils/globalresponse.js';
+import redisServices from '../../common/services/redis.services.js';
+import { GlobalCompare, Globalhash } from '../../common/security/hash.js';
+import cacheKeyEnum from '../../common/enum/cacheKey.enum.js';
+import s3Services from '../../common/services/s3Services.js';
+import postRepo from '../../DB/repo/post.repo.js';
+import { Globalencrypt } from '../../common/security/encrypt.js';
+import { postAvailbilty } from '../../common/utils/postUtils.js';
+import availabiltyEnum from '../../common/enum/availablity.enum.js';
+import { friendsFlagEnum, friendsRequestEnum, } from '../../common/enum/friendsFlag.enum.js';
+import fireBaseServices from '../../common/services/fireBase.services.js';
+import { sendEmail } from '../../common/utils/email/sendEmail.js';
+import mailEnum from '../../common/enum/mail.enum.js';
+import blockUserEnum from '../../common/enum/blockUser.enum.js';
+import storyRepo from '../../DB/repo/story.repo.js';
 class userServices {
     _userModel = new userRepo();
     _redisServices = new redisServices();
     _s3services = new s3Services();
     _postModel = new postRepo();
+    _storyModel = new storyRepo();
     _fireBase = new fireBaseServices();
     constructor() { }
     lockProfile = async (req, res, next) => {
         const { user } = req;
         const { flag } = req.query;
-        if (user?.profileLock && flag == "true") {
-            return ErrorConflict("the profile is already locked");
+        if (user?.profileLock && flag == 'true') {
+            return ErrorConflict('the profile is already locked');
         }
-        else if (!user?.profileLock && flag == "false") {
-            return ErrorConflict("the profile is already unlocked");
+        else if (!user?.profileLock && flag == 'false') {
+            return ErrorConflict('the profile is already unlocked');
         }
         await this._userModel.findByIdAndUpdate({
             id: user?.id,
             update: {
-                profileLock: flag == "true" ? true : false,
+                profileLock: flag == 'true' ? true : false,
             },
         });
-        SuccessResponse({ res, data: "user data updated" });
+        SuccessResponse({ res, data: 'user data updated' });
     };
     getUserSharedData = async (req, res, next) => {
         const { user } = req;
         const { userId } = req.params;
         const sharedUser = await this._userModel.findById({ id: userId });
         if (sharedUser?.profileLock &&
-            !sharedUser.friends.data.map((f) => {
+            !sharedUser.friends.data.map(f => {
                 if (f.friendId == userId)
                     return true;
             })) {
@@ -80,12 +82,12 @@ class userServices {
             options: {
                 populate: [
                     {
-                        path: "comments",
+                        path: 'comments',
                         match: {
                             commentId: { $exists: false },
                         },
                         populate: {
-                            path: "replies",
+                            path: 'replies',
                         },
                     },
                 ],
@@ -102,12 +104,12 @@ class userServices {
             options: {
                 populate: [
                     {
-                        path: "comments",
+                        path: 'comments',
                         match: {
                             commentId: { $exists: false },
                         },
                         populate: {
-                            path: "replies",
+                            path: 'replies',
                         },
                     },
                 ],
@@ -124,13 +126,13 @@ class userServices {
             update: {
                 firstName,
                 lastName,
-                "age.data": age?.data,
-                "aga.availibilty": age?.availibilty,
-                "gender.data": gender?.data,
-                "gender.availibilty": gender?.availibilty,
-                "phone.data": Globalencrypt({ plainText: phone?.data }),
-                "phone.availibilty": phone?.availibilty,
-                "friends.availibilty": friends.availibilty,
+                'age.data': age?.data,
+                'aga.availibilty': age?.availibilty,
+                'gender.data': gender?.data,
+                'gender.availibilty': gender?.availibilty,
+                'phone.data': Globalencrypt({ plainText: phone?.data }),
+                'phone.availibilty': phone?.availibilty,
+                'friends.availibilty': friends.availibilty,
                 profilePicture: file
                     ? await this._s3services.uploadFile({
                         file: req.file,
@@ -139,42 +141,42 @@ class userServices {
                     : undefined,
             },
         });
-        SuccessResponse({ res, data: "user updated" });
+        SuccessResponse({ res, data: 'user updated' });
     };
     updatePassword = async (req, res, next) => {
         const { oldPassword, newPassword } = req.body;
         const user = req.user;
         const hashOldPassword = user.password;
         if (!GlobalCompare({ plainText: oldPassword, hashText: hashOldPassword }))
-            ErrorUnAuthorizedRequest("passwords does not match");
+            ErrorUnAuthorizedRequest('passwords does not match');
         await this._userModel.findOneAndUpdate({
             filter: { email: user.email, confirmed: true },
             update: { password: Globalhash({ plainText: newPassword }) },
         });
-        SuccessResponse({ res, data: "password updated" });
+        SuccessResponse({ res, data: 'password updated' });
     };
     updateEmail = async (req, res, next) => {
         const { user } = req;
         const { email } = req.body;
         const emailExists = await this._userModel.findOne({
             filter: {
-                "email.data": email,
+                'email.data': email,
             },
         });
         if (emailExists)
-            return ErrorNotFound("email is used by anthor user");
+            return ErrorNotFound('email is used by anthor user');
         await sendEmail({
             to: email,
             subject: mailEnum.consrimSingUp,
             data: Math.floor(Math.random() * 10000),
         });
-        SuccessResponse({ res, data: "please confirm the email" });
+        SuccessResponse({ res, data: 'please confirm the email' });
     };
     updateEmailConfirmation = async (req, res, next) => {
         const { user } = req;
         const { newEmail, otp } = req.body;
         if (!newEmail || !otp)
-            return ErrorConflict("uncompatible data");
+            return ErrorConflict('uncompatible data');
         const cachedOtp = (await this._redisServices.getKey({
             key: this._redisServices.cacheKey({
                 filter: newEmail,
@@ -182,7 +184,7 @@ class userServices {
             }),
         }));
         if (!GlobalCompare({ plainText: otp, hashText: cachedOtp })) {
-            return Errorforbidden("worng otp");
+            return Errorforbidden('worng otp');
         }
         user.email.data = newEmail;
         await user?.save();
@@ -192,19 +194,19 @@ class userServices {
                 subject: cacheKeyEnum.emailAttempts,
             }),
         });
-        SuccessResponse({ res, data: "email updated" });
+        SuccessResponse({ res, data: 'email updated' });
     };
     deleteUser = async (req, res, next) => {
         const { user } = req;
         await this._userModel.findByIdAndDelete({
             id: user.id,
         });
-        SuccessResponse({ res, data: "user deleted" });
+        SuccessResponse({ res, data: 'user deleted' });
     };
     logout = async (req, res, next) => {
         const { flag } = req.query;
         const user = req.user;
-        if (flag == "all") {
+        if (flag == 'all') {
             user.creadnatials = new Date(Date.now());
             user.save();
         }
@@ -216,7 +218,7 @@ class userServices {
             value: user.email,
             ttl: Date.now() - req.tokenDecoded.iat * 1000,
         });
-        SuccessResponse({ res, data: "logout succeded" });
+        SuccessResponse({ res, data: 'logout succeded' });
     };
     sendFriendRequest = async (req, res, next) => {
         const { user } = req;
@@ -225,7 +227,7 @@ class userServices {
             id: requestedUserId,
         });
         if (!requestedUser)
-            return ErrorNotFound("requested user not found");
+            return ErrorNotFound('requested user not found');
         requestedUser?.friends.data.push({
             friendId: user?.id,
             flag: friendsFlagEnum.requestd,
@@ -238,7 +240,7 @@ class userServices {
         this._fireBase.sendNotifications({
             tokens: cachedFCM,
             data: {
-                title: "friend request",
+                title: 'friend request',
                 body: `${user?.userName} sent friend request`,
             },
         });
@@ -250,21 +252,21 @@ class userServices {
             id: requestedUserId,
         });
         if (!requestedUser)
-            return ErrorNotFound("requested user not found");
+            return ErrorNotFound('requested user not found');
         if (flag == friendsRequestEnum.accept ||
             flag == friendsRequestEnum.decline) {
-            user?.friends.data.map((f) => {
+            user?.friends.data.map(f => {
                 if (f.friendId == requestedUserId) {
                     flag == friendsRequestEnum.accept
                         ? (f.flag = friendsFlagEnum.friend)
-                        : user?.friends.data.slice(user?.friends.data.findIndex((fr) => {
+                        : user?.friends.data.slice(user?.friends.data.findIndex(fr => {
                             return fr.friendId == requestedUserId;
                         }), 1);
                 }
             });
         }
         else {
-            return ErrorConflict("please check request flag");
+            return ErrorConflict('please check request flag');
         }
         const cachedFCMS = await this._redisServices.getSet({
             filter: requestedUser.email?.data,
@@ -283,16 +285,16 @@ class userServices {
         const { removedFriendId } = req.params;
         const removedUser = await this._userModel.findById({ id: removedFriendId });
         if (!removedUser)
-            ErrorNotFound("user not Found");
-        user?.friends.data.map((f) => {
+            ErrorNotFound('user not Found');
+        user?.friends.data.map(f => {
             if (f.friendId == removedFriendId) {
-                user?.friends.data.slice(user?.friends.data.findIndex((fr) => {
+                user?.friends.data.slice(user?.friends.data.findIndex(fr => {
                     return fr.friendId == removedFriendId;
                 }), 1);
             }
         });
         await user?.save();
-        SuccessResponse({ res, data: "user has been removed" });
+        SuccessResponse({ res, data: 'user has been removed' });
     };
     uploadStroy = async (req, res, next) => {
         const { user } = req;
@@ -301,34 +303,33 @@ class userServices {
             file: file,
             path: `users/${user?.email.data}/storiess`,
         }));
-        user.story.push({
+        await this._storyModel.create({
+            userId: user?.id,
             url,
-            createdAt: new Date(),
         });
-        await user?.save();
-        SuccessResponse({ res, data: "story uploaded" });
+        SuccessResponse({ res, data: 'story uploaded' });
     };
     blockUser = async (req, res, next) => {
         const { blockedUserId, flag } = req.params;
         const { user } = req;
         const blockedUser = await this._userModel.findById({ id: blockedUserId });
         if (!blockedUser)
-            return ErrorNotFound("user not found");
+            return ErrorNotFound('user not found');
         if (flag == blockUserEnum.block &&
-            !user?.blockedUsers.map((b) => {
+            !user?.blockedUsers.map(b => {
                 return b == blockedUserId;
             })) {
             user?.blockedUsers.push(blockedUserId);
         }
         else if (flag == blockUserEnum.unBlock &&
-            user?.blockedUsers.map((b) => {
+            user?.blockedUsers.map(b => {
                 return b == blockedUserId;
             })) {
-            user?.blockedUsers.slice(user?.blockedUsers.findIndex((b) => {
+            user?.blockedUsers.slice(user?.blockedUsers.findIndex(b => {
                 return b == blockedUserId;
             }), 1);
         }
-        SuccessResponse({ res, data: "operation done" });
+        SuccessResponse({ res, data: 'operation done' });
     };
 }
 export default new userServices();

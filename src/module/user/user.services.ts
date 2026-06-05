@@ -13,7 +13,6 @@ import { HydratedDocument, Schema } from 'mongoose'
 import { IUser } from '../../DB/models/user.model.js'
 import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
 import s3Services from '../../common/services/s3Services.js'
-import { pipeline } from 'stream/promises'
 import postRepo from '../../DB/repo/post.repo.js'
 import { Globaldecrypt, Globalencrypt } from '../../common/security/encrypt.js'
 import { postAvailbilty } from '../../common/utils/postUtils.js'
@@ -26,7 +25,6 @@ import fireBaseServices from '../../common/services/fireBase.services.js'
 import { sendEmail } from '../../common/utils/email/sendEmail.js'
 import mailEnum from '../../common/enum/mail.enum.js'
 import blockUserEnum from '../../common/enum/blockUser.enum.js'
-import storyModel from '../../DB/models/story.model.js'
 import storyRepo from '../../DB/repo/story.repo.js'
 
 class userServices {
@@ -35,7 +33,6 @@ class userServices {
   private readonly _s3services = new s3Services()
   private readonly _postModel = new postRepo()
   private readonly _storyModel = new storyRepo()
-
   private readonly _fireBase = new fireBaseServices()
 
   constructor() {}
@@ -43,35 +40,29 @@ class userServices {
   lockProfile = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
     const { flag } = req.query
-    if (user?.profileLock && flag == 'true') {
+    if (user?.profileLock && flag == 'lock') {
       return ErrorConflict('the profile is already locked')
-    } else if (!user?.profileLock && flag == 'false') {
+    } else if (!user?.profileLock && flag == 'unlock') {
       return ErrorConflict('the profile is already unlocked')
     }
     await this._userModel.findByIdAndUpdate({
       id: user?.id!,
       update: {
-        profileLock: flag == 'true' ? true : false,
+        profileLock: flag == 'lock' ? true : false,
       },
     })
 
     SuccessResponse({ res, data: 'user data updated' })
   }
 
-  getUserSharedData = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  ShareProfile = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
     const { userId } = req.params
     const sharedUser = await this._userModel.findById({ id: userId })
 
     if (
       sharedUser?.profileLock &&
-      !sharedUser.friends.data.map(f => {
-        if (f.friendId == userId) return true
-      })
+      !sharedUser.friends.data.some(f => f.friendId == user?.id)
     ) {
       SuccessResponse({
         res,
@@ -129,7 +120,6 @@ class userServices {
 
   getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
-    // get posts and theire comments
     const posts = await this._postModel.findAll({
       filter: {
         createdBy: user!.id,
@@ -152,7 +142,7 @@ class userServices {
   }
 
   updateProfile = async (req: Request, res: Response, next: NextFunction) => {
-    const { firstName, lastName, age, gender, phone, friends }: IUser = req.body
+    const { firstName, lastName, age, gender, phone, friends } = req.body
     const { file } = req
     const { user } = req.body
     await this._userModel.findByIdAndUpdate({
@@ -161,7 +151,7 @@ class userServices {
         firstName,
         lastName,
         'age.data': age?.data,
-        'aga.availibilty': age?.availibilty,
+        'age.availibilty': age?.availibilty,
         'gender.data': gender?.data,
         'gender.availibilty': gender?.availibilty,
         'phone.data': Globalencrypt({ plainText: phone?.data! }),
@@ -219,9 +209,7 @@ class userServices {
     next: NextFunction,
   ) => {
     const { user } = req
-    const { newEmail, otp } = req.body as { newEmail: string; otp: string }
-
-    if (!newEmail || !otp) return ErrorConflict('uncompatible data')
+    const { newEmail, otp } = req.body
 
     const cachedOtp = (await this._redisServices.getKey({
       key: this._redisServices.cacheKey({
@@ -318,24 +306,24 @@ class userServices {
     next: NextFunction,
   ) => {
     const { user } = req
-    const { requestedUserId, flag } = req.params
-    const requestedUser = await this._userModel.findById({
-      id: requestedUserId,
+    const { requestingUserId, flag } = req.params
+    const requestingUser = await this._userModel.findById({
+      id: requestingUserId,
     })
 
-    if (!requestedUser) return ErrorNotFound('requested user not found')
+    if (!requestingUserId) return ErrorNotFound('requested user not found')
 
     if (
       flag == friendsRequestEnum.accept ||
-      flag == friendsRequestEnum.decline
+      flag == friendsRequestEnum.reject
     ) {
       user?.friends.data.map(f => {
-        if (f.friendId == requestedUserId) {
+        if (f.friendId == requestingUserId) {
           flag == friendsRequestEnum.accept
             ? (f.flag = friendsFlagEnum.friend)
             : user?.friends.data.slice(
                 user?.friends.data.findIndex(fr => {
-                  return fr.friendId == requestedUserId
+                  return fr.friendId == requestingUserId
                 }),
                 1,
               )
@@ -346,7 +334,7 @@ class userServices {
     }
 
     const cachedFCMS = await this._redisServices.getSet({
-      filter: requestedUser.email?.data!,
+      filter: requestingUserId.email?.data!,
       subject: cacheKeyEnum.fcm,
     })
     this._fireBase.sendNotifications({
@@ -379,23 +367,6 @@ class userServices {
     await user?.save()
 
     SuccessResponse({ res, data: 'user has been removed' })
-  }
-
-  uploadStroy = async (req: Request, res: Response, next: NextFunction) => {
-    const { user } = req
-    const { file } = req
-
-    const url = (await this._s3services.uploadFile({
-      file: file!,
-      path: `users/${user?.email.data}/storiess`,
-    })) as string
-
-    await this._storyModel.create({
-      userId: user?.id!,
-      url,
-    })
-
-    SuccessResponse({ res, data: 'story uploaded' })
   }
 
   blockUser = async (req: Request, res: Response, next: NextFunction) => {

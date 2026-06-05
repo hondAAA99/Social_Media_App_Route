@@ -4,7 +4,7 @@ import { postData } from "./types.js";
 class GLpostsFields {
     _postModel = new postRepo();
     constructor() { }
-    getUserPosts = () => {
+    getAllUserPosts = () => {
         return {
             type: postData,
             resolve: async (parent, args, context) => {
@@ -20,3 +20,4 @@ class GLpostsFields {
         };
     };
 }
+export default new GLpostsFields();

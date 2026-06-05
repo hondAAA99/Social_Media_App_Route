@@ -5,20 +5,47 @@ import providerEnum from '../../common/enum/provider.enum.js'
 import availabiltyEnum from '../../common/enum/availablity.enum.js'
 import { friendsFlagEnum } from '../../common/enum/friendsFlag.enum.js'
 
+interface IEmailData {
+  data: string
+  availibilty: string
+}
+
+interface IPhoneData {
+  data: string
+  availibilty: string
+}
+
+interface IAgeData {
+  data: Date
+  availibilty: string
+}
+
+interface IGenderData {
+  data: string
+  availibilty: string
+}
+
+interface IFriendItem {
+  flag: string
+  friendId: Schema.Types.ObjectId
+}
+
+interface IFriendsData {
+  availibilty: string
+  data: IFriendItem[]
+}
+
 export interface IUser {
   id?: Schema.Types.ObjectId
   firstName: string
   lastName: string
   userName: string
-  email: { data: string; availibilty: string }
+  email: IEmailData
   profilePicture?: String
-  friends: {
-    availibilty: string
-    data: Array<{ friendId: Schema.Types.ObjectId; flag: string }>
-  }
-  phone?: { data: string; availibilty: string }
-  age?: { data: Date; availibilty: string }
-  gender?: { data: string; availibilty: string }
+  friends: IFriendsData
+  phone?: IPhoneData
+  age?: IAgeData
+  gender?: IGenderData
   profileLock?: boolean
   blockedUsers: Schema.Types.ObjectId[]
   role?: string
@@ -32,16 +59,54 @@ export interface IUser {
   creadnatials?: Date
 }
 
+const emailSchema = new Schema<IEmailData>({
+  data: { type: String },
+  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+})
+
+const phoneSchema = new Schema<IPhoneData>({
+  data: { type: String },
+  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+})
+
+const ageSchema = new Schema<IAgeData>({
+  data: { type: Date },
+  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+})
+
+const genderSchema = new Schema<IGenderData>({
+  data: {
+    type: String,
+    enum: Object.values(genderEnum),
+    default: genderEnum.preferNotToSay,
+  },
+  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+})
+
+const friendItemSchema = new Schema<IFriendItem>({
+  flag: {
+    type: String,
+    enum: Object.values(friendsFlagEnum),
+    default: friendsFlagEnum.requestd,
+  },
+  friendId: { type: Schema.Types.ObjectId, ref: 'users' },
+})
+
+const friendsSchema = new Schema<IFriendsData>({
+  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+  data: {
+    type: [friendItemSchema],
+  },
+})
+
 const userSchema = new Schema<IUser>(
   {
-    profileLock: { type: Boolean, default: false },
+    blockedUsers: { type: [Schema.Types.ObjectId] },
+    friends: friendsSchema,
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: {
-      type: new Schema({
-        data: { type: String },
-        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
-      }),
+      type: emailSchema,
       required: true,
       unique: true,
     },
@@ -56,47 +121,6 @@ const userSchema = new Schema<IUser>(
       default: roleEnum.user,
       enum: Object.values(roleEnum),
     },
-    gender: {
-      type: new Schema({
-        data: {
-          type: String,
-          enum: Object.values(genderEnum),
-          default: genderEnum.preferNotToSay,
-        },
-        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
-      }),
-      default: {
-        data: genderEnum.preferNotToSay,
-        availibilty: availabiltyEnum.onlyMe,
-      },
-    },
-    phone: {
-      type: new Schema({
-        data: { type: String },
-        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
-      }),
-      default: {
-        data: '',
-        availibilty: availabiltyEnum.onlyMe,
-      },
-      required: function (this: any): boolean {
-        return this.provider === providerEnum.system
-      },
-    },
-    age: {
-      type: new Schema({
-        data: { type: Date },
-        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
-      }),
-      default: {
-        data: undefined,
-        availibilty: availabiltyEnum.onlyMe,
-      },
-      required: function (this: any): boolean {
-        return this.provider === providerEnum.system
-      },
-    },
-    confirmed: { type: Boolean, default: false },
     provider: {
       type: String,
       default: providerEnum.system,
@@ -112,27 +136,38 @@ const userSchema = new Schema<IUser>(
         return this.provider === providerEnum.system
       },
     },
+    phone: {
+      type: phoneSchema,
+      default: {
+        data: '',
+        availibilty: availabiltyEnum.onlyMe,
+      },
+      required: function (this: any): boolean {
+        return this.provider === providerEnum.system
+      },
+    },
+    age: {
+      type: ageSchema,
+      default: {
+        data: undefined,
+        availibilty: availabiltyEnum.onlyMe,
+      },
+      required: function (this: any): boolean {
+        return this.provider === providerEnum.system
+      },
+    },
+    gender: {
+      type: genderSchema,
+      default: {
+        data: genderEnum.preferNotToSay,
+        availibilty: availabiltyEnum.onlyMe,
+      },
+    },
+    profileLock: { type: Boolean, default: false },
+    confirmed: { type: Boolean, default: false },
+    twoStepVerfiction: { type: Boolean, default: false },
     creadnatials: { type: Date },
     deletedAt: { type: Date },
-    friends: {
-      type: new Schema({
-        availibilty: { type: String, enum: Object.values(availabiltyEnum) },
-        data: {
-          type: Array(
-            new Schema({
-              flag: {
-                type: String,
-                enum: Object.values(friendsFlagEnum),
-                default: friendsFlagEnum.requestd,
-              },
-              friendId: { type: Schema.Types.ObjectId, ref: 'users' },
-            }),
-          ),
-        },
-      }),
-    },
-    blockedUsers: { type: [Schema.Types.ObjectId] },
-    twoStepVerfiction: { type: Boolean, default: false },
   },
   {
     timestamps: true,

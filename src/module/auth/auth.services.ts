@@ -19,13 +19,13 @@ import { generateTokens } from './services.helpers.js'
 import redisServices from '../../common/services/redis.services.js'
 import {
   O2AUTH_CLIENT_ID,
+  SECRET_ADMIN_REFRESH_TOKEN,
   SECRET_USER_REFRESH_TOKEN,
-  TOKEN_USER_PREFIX,
+  TOKEN_ADMIN_PREFIX,
 } from '../../config/config.services.js'
 import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library'
 import providerEnum from '../../common/enum/provider.enum.js'
 import fireBaseServices from '../../common/services/fireBase.services.js'
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
 import {
   confirmEmailDTO,
   forgetPasswordDTO,
@@ -372,19 +372,22 @@ class auth {
     const { authorization } = req.headers
     const [prefix, token] = authorization!.split(' ')
 
-    if (prefix != TOKEN_USER_PREFIX!) return Errorforbidden('invalid token')
+    let secret =
+      prefix == TOKEN_ADMIN_PREFIX
+        ? SECRET_ADMIN_REFRESH_TOKEN
+        : SECRET_USER_REFRESH_TOKEN
 
     const verifyToken = TokenVerify({
       token: token!,
-      secret: SECRET_USER_REFRESH_TOKEN,
+      secret,
     })
 
     SuccessResponse({
       res,
       data: {
         accessToken: generateAccessToken({
-          userId: verifyToken.userId! as Schema.Types.ObjectId,
-          role: verifyToken.role as string,
+          userId: verifyToken.userId,
+          role: verifyToken.role,
         }),
       },
     })

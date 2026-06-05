@@ -1,15 +1,15 @@
-import commentRepo from "../../DB/repo/comment.repo.js";
-import { ErrorConflict, ErrorInteralServerError, ErrorNotFound, ErrorUnAuthorizedRequest, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import s3Services from "../../common/services/s3Services.js";
-import postRepo from "../../DB/repo/post.repo.js";
-import { postAvailbilty } from "../../common/utils/postUtils.js";
-import allowCommentsEnum from "../../common/enum/allowComments.enum.js";
-import userRepo from "../../DB/repo/user.repo.js";
-import redisService from "../../common/services/redis.services.js";
-import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
-import { randomUUID } from "crypto";
-import fireBaseServices from "../../common/services/fireBase.services.js";
-import onModelEnum from "../../common/enum/onModel.enum.js";
+import commentRepo from '../../DB/repo/comment.repo.js';
+import { ErrorConflict, ErrorInteralServerError, ErrorNotFound, ErrorUnAuthorizedRequest, SuccessResponse, } from '../../common/utils/globalresponse.js';
+import s3Services from '../../common/services/s3Services.js';
+import postRepo from '../../DB/repo/post.repo.js';
+import { postAvailbilty } from '../../common/utils/postUtils.js';
+import allowCommentsEnum from '../../common/enum/allowComments.enum.js';
+import userRepo from '../../DB/repo/user.repo.js';
+import redisService from '../../common/services/redis.services.js';
+import cacheKeyEnum from '../../common/enum/cacheKey.enum.js';
+import { randomUUID } from 'crypto';
+import fireBaseServices from '../../common/services/fireBase.services.js';
+import onModelEnum from '../../common/enum/onModel.enum.js';
 class commentServices {
     _commentRepo = new commentRepo();
     _userRepo = new userRepo();
@@ -39,7 +39,7 @@ class commentServices {
                         postId: postId,
                         options: {
                             populate: {
-                                path: "postId",
+                                path: 'postId',
                                 match: {
                                     $or: postAvailbilty(req),
                                     allowComments: allowCommentsEnum.allow,
@@ -54,7 +54,7 @@ class commentServices {
             }
         })();
         if (!doc)
-            return ErrorConflict("cannot found the target document");
+            return ErrorConflict('cannot found the target document');
         let arrMentions = [];
         let arrFcms = [];
         if (!tags?.length) {
@@ -64,11 +64,11 @@ class commentServices {
                 },
             });
             if (tagedUsers.length != tags.length) {
-                return ErrorNotFound("some of taged users are not exists");
+                return ErrorNotFound('some of taged users are not exists');
             }
             for (const tag of tags) {
                 if (tag == user.id) {
-                    return ErrorConflict("you cannot tag yourself");
+                    return ErrorConflict('you cannot tag yourself');
                 }
                 arrMentions.push(tag);
                 const fcms = this._redisServices.getSet({
@@ -98,7 +98,7 @@ class commentServices {
             await this._s3Services.deleteFiles({
                 Keys: urls,
             });
-            return ErrorInteralServerError("failed to add comment to the post");
+            return ErrorInteralServerError('failed to add comment to the post');
         }
         await this._fireBase.sendNotifications({
             tokens: arrFcms,
@@ -119,12 +119,12 @@ class commentServices {
                 postId,
             },
             populate: {
-                path: "comments",
+                path: 'comments',
                 match: {
                     commentId: { $exists: false },
                 },
                 populate: {
-                    path: "replies",
+                    path: 'replies',
                 },
             },
         });
@@ -135,7 +135,7 @@ class commentServices {
         const { postId } = req.params;
         const { user } = req;
         if (!user)
-            return next(new Error("Unauthorized"));
+            return next(new Error('Unauthorized'));
         const comments = await this._commentRepo.findOneAndUpdate({
             filter: {
                 postId,
@@ -145,7 +145,7 @@ class commentServices {
                 content,
             },
         });
-        SuccessResponse({ res, data: "comment updated" });
+        SuccessResponse({ res, data: 'comment updated' });
     };
     deleteComments = async (req, res, next) => {
         const { commentId } = req.body;
@@ -154,7 +154,7 @@ class commentServices {
             id: commentId,
         });
         if (comment?.createdBy != user?.id)
-            ErrorUnAuthorizedRequest("you cannot delete this comment");
+            ErrorUnAuthorizedRequest('you cannot delete this comment');
         comment?.attachments
             ? await this._s3Services.deleteFiles({
                 Keys: comment?.attachments,
@@ -166,7 +166,55 @@ class commentServices {
                 createdBy: user.id,
             },
         });
-        SuccessResponse({ res, data: "comment deleted" });
+        SuccessResponse({ res, data: 'comment deleted' });
+    };
+    commentReact = async (req, res, next) => {
+        const { user } = req;
+        const { commentId } = req.params;
+        const { flag } = req.params;
+        const comment = await this._commentRepo.findById({ id: commentId });
+        if (!comment)
+            return ErrorNotFound('comment not found');
+        const reactPath = `reacts.reactsCount.${flag}`;
+        await this._commentRepo.findByIdAndUpdate({
+            id: commentId,
+            update: {
+                $inc: { reactPath: 1, ' reacts.reactsCount.total': 1 },
+            },
+        });
+        comment?.reacts.reactedUsers.push({
+            userId: user?.id,
+            react: flag,
+        });
+        await comment?.save();
+        SuccessResponse({ res, data: 'like!' });
+    };
+    deleteComment = async (req, res, next) => {
+        const { commentId } = req.params;
+        const { postId } = req.params;
+        const { user } = req;
+        if (!user.id == postId.createdBy)
+            return ErrorUnAuthorizedRequest('you can not perform that request');
+        await this._commentRepo.deleteOne({
+            filter: {
+                id: commentId,
+            },
+        });
+        SuccessResponse({ res, data: 'comment deleted' });
+    };
+    hideComment = async (req, res, next) => {
+        const { commentId } = req.params;
+        const { postId } = req.params;
+        const { user } = req;
+        if (!user.id == postId.createdBy)
+            return ErrorUnAuthorizedRequest('you can not perform that request');
+        await this._commentRepo.findByIdAndUpdate({
+            id: commentId,
+            update: {
+                hideComment: true,
+            },
+        });
+        SuccessResponse({ res, data: 'comment deleted' });
     };
 }
 export default new commentServices();

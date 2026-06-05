@@ -1,5 +1,5 @@
 import { SECRET_ADMIN_ACCESS_TOKEN, SECRET_USER_ACCESS_TOKEN, TOKEN_ADMIN_PREFIX, TOKEN_USER_PREFIX, } from "../../config/config.services.js";
-import { accessTokenVerify } from "../security/jsonWebTokens.js";
+import { TokenVerify } from "../security/jsonWebTokens.js";
 import { ErrorConflict, Errorforbidden, } from "./globalresponse.js";
 import userRepo from "../../DB/repo/user.repo.js";
 async function authenticateUtilts(authorization) {
@@ -16,7 +16,7 @@ async function authenticateUtilts(authorization) {
         }
         return Errorforbidden("invalid token");
     })();
-    const verify = accessTokenVerify({
+    const verify = TokenVerify({
         token,
         secret,
     });
