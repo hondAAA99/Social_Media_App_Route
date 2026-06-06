@@ -4,6 +4,7 @@ const cacheKeyEnum = {
   block: 'block',
   fcm: 'FCM',
   socket: 'socket',
+  story : 'story'
 }
 
 export default cacheKeyEnum

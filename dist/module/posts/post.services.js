@@ -1,13 +1,14 @@
-import { ErrorConflict, ErrorInteralServerError, ErrorNotFound, SuccessResponse, } from "../../common/utils/globalresponse.js";
-import postRepo from "../../DB/repo/post.repo.js";
-import userRepo from "../../DB/repo/user.repo.js";
-import redisServices from "../../common/services/redis.services.js";
-import cacheKeyEnum from "../../common/enum/cacheKey.enum.js";
-import s3Services from "../../common/services/s3Services.js";
-import { randomUUID } from "crypto";
-import { Schema, } from "mongoose";
-import fireBaseServices from "../../common/services/fireBase.services.js";
-import { postAvailbilty, searchQuery } from "../../common/utils/postUtils.js";
+import { ErrorConflict, ErrorNotFound, SuccessResponse, } from '../../common/utils/globalresponse.js';
+import postRepo from '../../DB/repo/post.repo.js';
+import userRepo from '../../DB/repo/user.repo.js';
+import redisServices from '../../common/services/redis.services.js';
+import cacheKeyEnum from '../../common/enum/cacheKey.enum.js';
+import s3Services from '../../common/services/s3Services.js';
+import { randomUUID } from 'crypto';
+import { Schema } from 'mongoose';
+import fireBaseServices from '../../common/services/fireBase.services.js';
+import { postAvailability, searchQuery } from '../../common/utils/postUtils.js';
+import roleEnum from '../../common/enum/role.enum.js';
 class postServices {
     _postModel = new postRepo();
     _userModel = new userRepo();
@@ -16,7 +17,7 @@ class postServices {
     _fireBase = new fireBaseServices();
     constructor() { }
     createPost = async (req, res, next) => {
-        const { availablity, content, tags, allowComments, hideLikeCount, } = req.body;
+        const { availability, content, tags, allowComments, hideLikeCount, } = req.body;
         const { user } = req;
         let mentionsArr;
         let fcmArr = [];
@@ -28,7 +29,7 @@ class postServices {
                 },
             });
             if (mentionsArr && tags.length !== mentionsArr.length) {
-                ErrorConflict("invalid tags");
+                ErrorConflict('invalid tags');
             }
             mentionsArr?.map(async (mention) => {
                 mentions.push(mention.id);
@@ -46,7 +47,7 @@ class postServices {
             });
             const post = await this._postModel.create({
                 content: content,
-                availablity,
+                availability,
                 tags: mentions,
                 attachments: Keys,
                 allowComments,
@@ -57,7 +58,7 @@ class postServices {
                 await this._s3Service.deleteFiles({
                     Keys,
                 });
-                ErrorInteralServerError("failed to create post");
+                ErrorinternalServerError('failed to create post');
             }
             await this._fireBase.sendNotifications({
                 tokens: fcmArr,
@@ -66,7 +67,7 @@ class postServices {
                     body: `${user?.userName} mentioned you in a post`,
                 },
             });
-            post.reacts.reactAviliablity = hideLikeCount;
+            post.reacts.reactavailability = hideLikeCount;
             SuccessResponse({ res, data: post });
         }
     };
@@ -75,16 +76,18 @@ class postServices {
             page: Number(req?.query?.page),
             limit: Number(req?.query?.limit),
             search: {
-                $or: [...postAvailbilty(req), searchQuery(req)],
+                $or: [...postAvailability(req), searchQuery(req)],
+                deletedBy: { $exists: false },
+                deletedAt: { $exists: false },
             },
             populate: [
                 {
-                    path: "comments",
+                    path: 'comments',
                     match: {
                         commentId: { $exists: false },
                     },
                     populate: {
-                        path: "replies",
+                        path: 'replies',
                     },
                 },
             ],
@@ -97,12 +100,12 @@ class postServices {
         const { user } = req;
         const post = await this._postModel.findById({ id: postId });
         if (!post)
-            return ErrorNotFound("post not found");
+            return ErrorNotFound('post not found');
         const reactPath = `reacts.reactsCount.${flag}`;
         await this._postModel.findByIdAndUpdate({
             id: postId,
             update: {
-                $inc: { reactPath: 1, " reacts.reactsCount.total": 1 },
+                $inc: { reactPath: 1, ' reacts.reactsCount.total': 1 },
             },
         });
         post.reacts.reactedUsers.push({
@@ -110,7 +113,7 @@ class postServices {
             react: flag,
         });
         await post.save();
-        SuccessResponse({ res, data: "like!" });
+        SuccessResponse({ res, data: 'like!' });
     };
     updatePost = async (req, res, next) => {
         const { postId } = req.params;
@@ -123,21 +126,21 @@ class postServices {
             },
         });
         if (!post) {
-            ErrorConflict("posy not found or not authorized");
+            ErrorConflict('posy not found or not authorized');
         }
         if (removeFiles?.length) {
             const inValidFiles = removeFiles.filter((file) => {
                 return !post?.attachments?.includes(file);
             });
             if (inValidFiles?.length) {
-                ErrorConflict("some of path file you want remove not exist");
+                ErrorConflict('some of path file you want remove not exist');
             }
             await this._s3Service.deleteFiles({ Keys: removeFiles });
             post.attachments = post?.attachments?.filter((file) => {
                 return !removeFiles.includes(file);
             });
         }
-        const updateTags = new Set(post?.tags?.map((id) => id.toString()));
+        const updateTags = new Set(post?.tags?.map(id => id.toString()));
         removeTags.forEach((tag) => {
             return updateTags.delete(tag);
         });
@@ -149,17 +152,17 @@ class postServices {
                 },
             });
             if (tags.length !== mentionsTags.length) {
-                ErrorConflict("some person you mentioned not found");
+                ErrorConflict('some person you mentioned not found');
             }
             for (const tag of mentionsTags) {
                 if (tag._id.toString() == req.user?._id.toString()) {
-                    ErrorConflict("you can not mention tou your self");
+                    ErrorConflict('you can not mention tou your self');
                 }
                 updateTags.add(tag._id.toString());
                 (await this._redisServices.getSet({
                     filter: req?.user?.email.data,
                     subject: cacheKeyEnum.fcm,
-                })).map((token) => {
+                })).map(token => {
                     fcms_token.push(token);
                 });
             }
@@ -177,24 +180,39 @@ class postServices {
         if (content)
             post.content = content;
         if (availability)
-            post.availablity = availability;
+            post.availability = availability;
         if (allowComment)
             post.allowComments = allowComment;
         if (hideLikeCount)
-            post.reacts.reactAviliablity = hideLikeCount;
+            post.reacts.reactavailability = hideLikeCount;
         await post.save();
-        SuccessResponse({ res, data: " post updated" });
+        SuccessResponse({ res, data: ' post updated' });
     };
     deletePost = async (req, res, next) => {
         const { user } = req;
         const { postId } = req.params;
-        await this._postModel.deleteOne({
-            filter: {
-                id: postId,
-                createdBy: user?.id,
+        const post = await this._postModel.findOneAndUpdate({
+            filter: user?.role == roleEnum.admin
+                ? {
+                    id: postId,
+                }
+                : {
+                    id: postId,
+                    createdBy: user?.id,
+                },
+            update: {
+                deleteBy: user?.id,
+            },
+            options: {
+                returnDocument: 'after',
             },
         });
-        SuccessResponse({ res, data: "post deleted" });
+        if (!post)
+            return ErrorConflict('there is no post to be updated');
+        await this._s3Service.deleteFolder({
+            folderKey: `users/${user?.email}/posts/${post?.value.folderId}`,
+        });
+        SuccessResponse({ res, data: 'post deleted' });
     };
 }
 export default new postServices();

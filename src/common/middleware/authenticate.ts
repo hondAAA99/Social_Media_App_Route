@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { HydratedDocument } from 'mongoose'
-import { IUser } from '../../DB/models/user.model.js'
+import { IUser } from '../../DB/models/users/user.model.js'
 import authenticateUtilts from '../utils/authentication.utils.js'
 
 export async function authenticate(

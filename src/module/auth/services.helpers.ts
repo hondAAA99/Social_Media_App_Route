@@ -1,22 +1,22 @@
 import {
   generateAccessToken,
   generateRefreshToken,
-} from "../../common/security/jsonWebTokens.js";
-import { IUser } from "../../DB/models/user.model.js";
-import { HydratedDocument, StringExpression } from "mongoose";
+} from '../../common/security/jsonWebTokens.js'
+import { IUser } from '../../DB/models/users/user.model.js'
+import { HydratedDocument, StringExpression } from 'mongoose'
 
 export function generateTokens(user: HydratedDocument<IUser>): {
-  accessToken: string;
-  refreshToken: string;
+  accessToken: string
+  refreshToken: string
 } {
   const accessToken: string = generateAccessToken({
     userId: user.id,
     role: user.role!,
-  });
+  })
   const refreshToken: string = generateRefreshToken({
     userId: user.id,
     role: user.role!,
-  });
+  })
 
-  return { accessToken, refreshToken };
+  return { accessToken, refreshToken }
 }

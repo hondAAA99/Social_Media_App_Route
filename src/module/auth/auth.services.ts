@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { IUser } from '../../DB/models/user.model.js'
+import { IUser } from '../../DB/models/users/user.model.js'
 
 import {
   ErrorConflict,

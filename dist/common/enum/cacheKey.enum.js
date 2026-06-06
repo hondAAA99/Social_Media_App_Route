@@ -1,7 +1,9 @@
 const cacheKeyEnum = {
-    revokeToken: "revokeToken",
+    revokeToken: 'revokeToken',
     emailAttempts: 'attempts',
     block: 'block',
-    fcm: 'FCM'
+    fcm: 'FCM',
+    socket: 'socket',
+    story: 'story'
 };
 export default cacheKeyEnum;

@@ -25,29 +25,26 @@ class userServices {
     lockProfile = async (req, res, next) => {
         const { user } = req;
         const { flag } = req.query;
-        if (user?.profileLock && flag == 'true') {
+        if (user?.profileLock && flag == 'lock') {
             return ErrorConflict('the profile is already locked');
         }
-        else if (!user?.profileLock && flag == 'false') {
+        else if (!user?.profileLock && flag == 'unlock') {
             return ErrorConflict('the profile is already unlocked');
         }
         await this._userModel.findByIdAndUpdate({
             id: user?.id,
             update: {
-                profileLock: flag == 'true' ? true : false,
+                profileLock: flag == 'lock' ? true : false,
             },
         });
         SuccessResponse({ res, data: 'user data updated' });
     };
-    getUserSharedData = async (req, res, next) => {
+    ShareProfile = async (req, res, next) => {
         const { user } = req;
         const { userId } = req.params;
         const sharedUser = await this._userModel.findById({ id: userId });
         if (sharedUser?.profileLock &&
-            !sharedUser.friends.data.map(f => {
-                if (f.friendId == userId)
-                    return true;
-            })) {
+            !sharedUser.friends.data.some(f => f.friendId == user?.id)) {
             SuccessResponse({
                 res,
                 data: {
@@ -127,7 +124,7 @@ class userServices {
                 firstName,
                 lastName,
                 'age.data': age?.data,
-                'aga.availibilty': age?.availibilty,
+                'age.availibilty': age?.availibilty,
                 'gender.data': gender?.data,
                 'gender.availibilty': gender?.availibilty,
                 'phone.data': Globalencrypt({ plainText: phone?.data }),
@@ -175,8 +172,6 @@ class userServices {
     updateEmailConfirmation = async (req, res, next) => {
         const { user } = req;
         const { newEmail, otp } = req.body;
-        if (!newEmail || !otp)
-            return ErrorConflict('uncompatible data');
         const cachedOtp = (await this._redisServices.getKey({
             key: this._redisServices.cacheKey({
                 filter: newEmail,
@@ -247,20 +242,20 @@ class userServices {
     };
     handleFriendRequest = async (req, res, next) => {
         const { user } = req;
-        const { requestedUserId, flag } = req.params;
-        const requestedUser = await this._userModel.findById({
-            id: requestedUserId,
+        const { requestingUserId, flag } = req.params;
+        const requestingUser = await this._userModel.findById({
+            id: requestingUserId,
         });
-        if (!requestedUser)
+        if (!requestingUserId)
             return ErrorNotFound('requested user not found');
         if (flag == friendsRequestEnum.accept ||
-            flag == friendsRequestEnum.decline) {
+            flag == friendsRequestEnum.reject) {
             user?.friends.data.map(f => {
-                if (f.friendId == requestedUserId) {
+                if (f.friendId == requestingUserId) {
                     flag == friendsRequestEnum.accept
                         ? (f.flag = friendsFlagEnum.friend)
                         : user?.friends.data.slice(user?.friends.data.findIndex(fr => {
-                            return fr.friendId == requestedUserId;
+                            return fr.friendId == requestingUserId;
                         }), 1);
                 }
             });
@@ -269,7 +264,7 @@ class userServices {
             return ErrorConflict('please check request flag');
         }
         const cachedFCMS = await this._redisServices.getSet({
-            filter: requestedUser.email?.data,
+            filter: requestingUserId.email?.data,
             subject: cacheKeyEnum.fcm,
         });
         this._fireBase.sendNotifications({
@@ -295,19 +290,6 @@ class userServices {
         });
         await user?.save();
         SuccessResponse({ res, data: 'user has been removed' });
-    };
-    uploadStroy = async (req, res, next) => {
-        const { user } = req;
-        const { file } = req;
-        const url = (await this._s3services.uploadFile({
-            file: file,
-            path: `users/${user?.email.data}/storiess`,
-        }));
-        await this._storyModel.create({
-            userId: user?.id,
-            url,
-        });
-        SuccessResponse({ res, data: 'story uploaded' });
     };
     blockUser = async (req, res, next) => {
         const { blockedUserId, flag } = req.params;

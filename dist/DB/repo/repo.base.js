@@ -22,8 +22,10 @@ class repoBase {
             .sort(options?.sort)
             .populate(options?.populate);
     }
-    async findById({ id, projection, }) {
-        return await this._model.findById(id, projection);
+    async findById({ id, projection, populate, }) {
+        return await this._model
+            .findById(id, projection)
+            .populate(populate);
     }
     async findByIdAndUpdate({ id, update, options, }) {
         return await this._model.findByIdAndUpdate(id, update, {
@@ -42,6 +44,9 @@ class repoBase {
     }
     async deleteOne({ filter, options, }) {
         return await this._model.deleteOne(filter);
+    }
+    async findOneAndDelete({ filter, options, }) {
+        return await this._model.findOneAndDelete(filter);
     }
     async deleteMany({ filter, options, paranoid = false, }) {
         return await this._model.deleteMany(filter);

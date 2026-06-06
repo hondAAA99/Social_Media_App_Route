@@ -16,3 +16,9 @@ export async function authenticateGQL(context) {
         decoded,
     };
 }
+export async function authenticateSocket(socket) {
+    const { authorization } = socket.handshake.auth.authorization ||
+        socket.handshake.headers.authorization;
+    const { user, token, decoded } = await authenticateUtilts(authorization);
+    return { user, token, decoded };
+}

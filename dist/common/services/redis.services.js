@@ -1,7 +1,7 @@
-import { ErrorInteralServerError } from "../utils/globalresponse.js";
-import redis from "redis";
-import { string } from "zod";
-import { REDIS_CLIENT } from "../../config/config.services.js";
+import { ErrorInteralServerError } from '../utils/globalresponse.js';
+import redis from 'redis';
+import { string } from 'zod';
+import { REDIS_CLIENT } from '../../config/config.services.js';
 class redisService {
     _client = redis.createClient({
         url: REDIS_CLIENT,
@@ -9,20 +9,18 @@ class redisService {
     constructor() { }
     async connect() {
         await this._client.connect();
-        console.log("connected to redis succeded");
+        console.log('connected to redis succeded');
     }
     async keyExists({ key }) {
         return await this._client.exists(key);
     }
-    cacheKey({ filter, subject }) {
+    cacheKey({ filter, subject, }) {
         return `${subject}::${filter}`;
     }
     async setKey({ key, value, ttl = 60, }) {
         try {
             value =
-                typeof value == string
-                    ? value
-                    : JSON.stringify(value, null, 2);
+                typeof value == string ? value : JSON.stringify(value, null, 2);
             return await this._client.set(key, value, { EX: ttl });
         }
         catch (err) {
@@ -32,7 +30,7 @@ class redisService {
     async getKey({ key }) {
         try {
             if (!this.keyExists({ key }) > 0) {
-                ErrorInteralServerError("key expiered");
+                ErrorInteralServerError('key expiered');
             }
             const value = await this._client.get(key);
             try {
@@ -43,7 +41,7 @@ class redisService {
             }
         }
         catch (err) {
-            ErrorInteralServerError("failed to get the value from cache");
+            ErrorInteralServerError('failed to get the value from cache');
         }
     }
     async getAllKeys(pattern) {
@@ -70,7 +68,7 @@ class redisService {
     async getKeyTtl(key) {
         try {
             if (!this.keyExists({ key }) > 0) {
-                ErrorInteralServerError("key expiered");
+                ErrorInteralServerError('key expiered');
             }
             const value = await this._client.ttl(key);
             return value;

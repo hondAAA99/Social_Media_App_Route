@@ -13,7 +13,7 @@ export const createPostSchema = {
         tags: z.array(genRules.id).optional,
         allowComments: z.enum(allowCommentsEnum).default(allowCommentsEnum.allow),
         hideLikeCount: z.enum(hideLikeCount).default(hideLikeCount.show),
-        availablity: z.enum(availabiltyEnum).default(availabiltyEnum.freinds),
+        availability: z.enum(availabiltyEnum).default(availabiltyEnum.freinds),
     })
         .superRefine((data, ctx) => {
         if (!data.content && !data?.attachments?.length) {

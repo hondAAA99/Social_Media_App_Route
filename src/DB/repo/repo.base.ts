@@ -3,17 +3,17 @@ import {
   ModifyResult,
   QueryOptions,
   WithLevel1NestedPaths,
-} from "mongoose";
-import { PopulateOptions } from "mongoose";
-import { UpdateQuery } from "mongoose";
-import { ProjectionType } from "mongoose";
-import { HydratedDocument, Model, QueryFilter, Schema } from "mongoose";
+} from 'mongoose'
+import { PopulateOptions } from 'mongoose'
+import { UpdateQuery } from 'mongoose'
+import { ProjectionType } from 'mongoose'
+import { HydratedDocument, Model, QueryFilter, Schema } from 'mongoose'
 
 abstract class repoBase<Tdocument> {
   constructor(protected readonly _model: Model<Tdocument>) {}
 
   async create(data: Partial<Tdocument>): Promise<HydratedDocument<Tdocument>> {
-    return await this._model.create(data);
+    return await this._model.create(data)
   }
 
   async findAll({
@@ -21,16 +21,16 @@ abstract class repoBase<Tdocument> {
     options,
     projection,
   }: {
-    filter: QueryFilter<Tdocument>;
-    projection?: ProjectionType<Tdocument> | null;
-    options?: QueryOptions<Tdocument>;
+    filter: QueryFilter<Tdocument>
+    projection?: ProjectionType<Tdocument> | null
+    options?: QueryOptions<Tdocument>
   }): Promise<HydratedDocument<Tdocument>[] | null> {
     return await this._model
       .find(filter, projection)
       .skip(options?.skip!)
       .limit(options?.limit!)
       .sort(options?.sort)
-      .populate(options?.populate as PopulateOptions);
+      .populate(options?.populate as PopulateOptions)
   }
 
   async findOne({
@@ -38,26 +38,30 @@ abstract class repoBase<Tdocument> {
     projection,
     options,
   }: {
-    filter: QueryFilter<Tdocument>;
-    projection?: ProjectionType<Tdocument> | null;
-    options?: QueryOptions<Tdocument>;
+    filter: QueryFilter<Tdocument>
+    projection?: ProjectionType<Tdocument> | null
+    options?: QueryOptions<Tdocument>
   }): Promise<HydratedDocument<Tdocument> | null> {
     return await this._model
       .findOne(filter, projection)
       .skip(options?.skip!)
       .limit(options?.limit!)
       .sort(options?.sort)
-      .populate(options?.populate as PopulateOptions);
+      .populate(options?.populate as PopulateOptions)
   }
 
   async findById({
     id,
     projection,
+    populate,
   }: {
-    id: Schema.Types.ObjectId | any;
-    projection?: ProjectionType<Tdocument> | null | undefined;
+    id: Schema.Types.ObjectId | any
+    projection?: ProjectionType<Tdocument> | null | undefined
+    populate?: PopulateOptions | null | undefined
   }): Promise<HydratedDocument<Tdocument> | null> {
-    return await this._model.findById(id, projection);
+    return await this._model
+      .findById(id, projection)
+      .populate(populate as PopulateOptions)
   }
 
   async findByIdAndUpdate({
@@ -65,14 +69,14 @@ abstract class repoBase<Tdocument> {
     update,
     options,
   }: {
-    id: Schema.Types.ObjectId;
-    update: UpdateQuery<Tdocument>;
-    options?: QueryOptions<Tdocument> | null;
+    id: Schema.Types.ObjectId
+    update: UpdateQuery<Tdocument>
+    options?: QueryOptions<Tdocument> | null
   }): Promise<HydratedDocument<Tdocument> | null> {
     return await this._model.findByIdAndUpdate(id, update, {
       new: true,
       ...options,
-    });
+    })
   }
 
   async findOneAndUpdate({
@@ -80,34 +84,44 @@ abstract class repoBase<Tdocument> {
     update,
     options,
   }: {
-    filter: QueryFilter<WithLevel1NestedPaths<Tdocument>>;
-    update?: UpdateQuery<Tdocument>;
-    options?: QueryOptions<Tdocument>;
+    filter: QueryFilter<WithLevel1NestedPaths<Tdocument>>
+    update?: UpdateQuery<Tdocument>
+    options?: QueryOptions<Tdocument>
   }): Promise<ModifyResult<Tdocument> | null> {
     return await this._model.findOneAndUpdate(filter, update, {
       ...options,
       new: true,
-    });
+    })
   }
 
   async findByIdAndDelete({
     id,
     options,
   }: {
-    id: Schema.Types.ObjectId;
-    options?: QueryOptions<Tdocument>;
+    id: Schema.Types.ObjectId
+    options?: QueryOptions<Tdocument>
   }) {
-    return await this._model.findByIdAndDelete(id, options);
+    return await this._model.findByIdAndDelete(id, options)
   }
 
   async deleteOne({
     filter,
     options,
   }: {
-    filter: QueryFilter<Tdocument>;
-    options?: QueryOptions<Tdocument>;
+    filter: QueryFilter<Tdocument>
+    options?: QueryOptions<Tdocument>
   }) {
-    return await this._model.deleteOne(filter);
+    return await this._model.deleteOne(filter)
+  }
+
+  async findOneAndDelete({
+    filter,
+    options,
+  }: {
+    filter: QueryFilter<Tdocument>
+    options?: QueryOptions<Tdocument>
+  }) {
+    return await this._model.findOneAndDelete(filter)
   }
 
   async deleteMany({
@@ -115,11 +129,11 @@ abstract class repoBase<Tdocument> {
     options,
     paranoid = false,
   }: {
-    filter: QueryFilter<Tdocument>;
-    options?: QueryOptions<Tdocument>;
-    paranoid?: Boolean;
+    filter: QueryFilter<Tdocument>
+    options?: QueryOptions<Tdocument>
+    paranoid?: Boolean
   }) {
-    return await this._model.deleteMany(filter);
+    return await this._model.deleteMany(filter)
   }
 
   async paginate<T>({
@@ -129,16 +143,16 @@ abstract class repoBase<Tdocument> {
     search = {},
     sort,
   }: {
-    limit: number;
-    page: number;
-    populate?: any;
-    sort?: any;
-    search?: QueryFilter<T>;
+    limit: number
+    page: number
+    populate?: any
+    sort?: any
+    search?: QueryFilter<T>
   }) {
-    limit = !limit || limit < 0 ? 1 : Number(limit);
-    page = !page || page < 0 ? 2 : Number(page);
+    limit = !limit || limit < 0 ? 1 : Number(limit)
+    page = !page || page < 0 ? 2 : Number(page)
 
-    let skip = (limit - 1) * page;
+    let skip = (limit - 1) * page
 
     const [data, totalDoc]: [any, number] = await Promise.all([
       this.findAll({
@@ -151,9 +165,9 @@ abstract class repoBase<Tdocument> {
         },
       }),
       this._model.countDocuments({ ...(search ?? {}) }),
-    ]);
+    ])
 
-    let totalPages = totalDoc / limit;
+    let totalPages = totalDoc / limit
 
     return {
       meta: {
@@ -163,8 +177,8 @@ abstract class repoBase<Tdocument> {
         limit,
       },
       data,
-    };
+    }
   }
 }
 
-export default repoBase;
+export default repoBase

@@ -21,6 +21,7 @@ import fireBaseServices from './common/services/fireBase.services.js'
 import { deleteUnconfirmedUsersCronJob } from './common/utils/cronJob.js'
 
 import socketGateway from './module/realTime/socket.gateway.js'
+import storyRouter from './module/story/story.controller.js'
 const app: Application = express()
 const port = Number(PORT)
 const host = HOST
@@ -36,6 +37,7 @@ const bootstrap = async () => {
   app.use('/users', userRouter)
   app.use('/posts', postRouter)
   app.use('/news-feed', newsFeedRouter)
+  app.use('/stories', storyRouter)
 
   app.use(
     '/graphql',

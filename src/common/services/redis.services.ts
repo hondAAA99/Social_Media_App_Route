@@ -1,26 +1,33 @@
-import { ErrorInteralServerError } from "../utils/globalresponse.js";
-import redis, { createClient, RedisArgument, RedisClientType } from "redis";
-import { string } from "zod";
-import { REDIS_CLIENT } from "../../config/config.services.js";
+import { ErrorInteralServerError } from '../utils/globalresponse.js'
+import redis, { createClient, RedisArgument, RedisClientType } from 'redis'
+import { string } from 'zod'
+import { REDIS_CLIENT } from '../../config/config.services.js'
+import { Schema } from 'mongoose'
 
 class redisService {
   private readonly _client: RedisClientType = redis.createClient({
     url: REDIS_CLIENT,
-  });
+  })
 
   constructor() {}
 
   async connect() {
-    await this._client.connect();
-    console.log("connected to redis succeded");
+    await this._client.connect()
+    console.log('connected to redis succeded')
   }
 
   private async keyExists({ key }: { key: RedisArgument }): Promise<number> {
-    return await this._client.exists(key);
+    return await this._client.exists(key)
   }
 
-  cacheKey({ filter, subject }: { filter: string; subject: string }): string {
-    return `${subject}::${filter}`;
+  cacheKey({
+    filter,
+    subject,
+  }: {
+    filter: string | Schema.Types.ObjectId
+    subject: string
+  }): string {
+    return `${subject}::${filter}`
   }
 
   async setKey({
@@ -28,75 +35,73 @@ class redisService {
     value,
     ttl = 60,
   }: {
-    key: RedisArgument;
-    value: any | RedisArgument;
-    ttl: number;
+    key: RedisArgument
+    value: any | RedisArgument
+    ttl: number
   }) {
     try {
       value =
-        (typeof value as any) == string
-          ? value
-          : JSON.stringify(value, null, 2);
-      return await this._client.set(key, value, { EX: ttl });
+        (typeof value as any) == string ? value : JSON.stringify(value, null, 2)
+      return await this._client.set(key, value, { EX: ttl })
     } catch (err) {
-      ErrorInteralServerError(err);
+      ErrorInteralServerError(err)
     }
   }
 
   async getKey({ key }: { key: string }): Promise<void | string> {
     try {
       if ((!this.keyExists({ key }) as unknown as number) > 0) {
-        ErrorInteralServerError("key expiered");
+        ErrorInteralServerError('key expiered')
       }
-      const value = await this._client.get(key);
+      const value = await this._client.get(key)
       try {
-        return JSON.parse(value as string);
+        return JSON.parse(value as string)
       } catch (err) {
-        return value as string;
+        return value as string
       }
     } catch (err) {
-      ErrorInteralServerError("failed to get the value from cache");
+      ErrorInteralServerError('failed to get the value from cache')
     }
   }
 
   async getAllKeys(pattern: RedisArgument): Promise<String[] | any> {
     try {
-      const value = await this._client.keys(pattern);
-      return value;
+      const value = await this._client.keys(pattern)
+      return value
     } catch (err) {
-      ErrorInteralServerError(err);
+      ErrorInteralServerError(err)
     }
   }
 
   async deleteKey({ key }: { key: RedisArgument }) {
     try {
       if ((!this.keyExists({ key }) as unknown as number) > 0) {
-        return;
+        return
       }
-      const value = await this._client.del(await this.getAllKeys(key));
-      return value;
+      const value = await this._client.del(await this.getAllKeys(key))
+      return value
     } catch (err) {
-      ErrorInteralServerError(err);
+      ErrorInteralServerError(err)
     }
   }
 
   async getKeyTtl(key: RedisArgument) {
     try {
       if ((!this.keyExists({ key }) as unknown as number) > 0) {
-        ErrorInteralServerError("key expiered");
+        ErrorInteralServerError('key expiered')
       }
-      const value = await this._client.ttl(key);
-      return value;
+      const value = await this._client.ttl(key)
+      return value
     } catch (err) {
-      ErrorInteralServerError(err);
+      ErrorInteralServerError(err)
     }
   }
 
   async incrKey(key: RedisArgument) {
     try {
-      await this._client.incr(key);
+      await this._client.incr(key)
     } catch (err) {
-      ErrorInteralServerError(err);
+      ErrorInteralServerError(err)
     }
   }
 
@@ -111,7 +116,7 @@ class redisService {
         subject,
       }),
       members,
-    );
+    )
   }
   async getSet({ filter, subject }: { filter: string; subject: string }) {
     return await this._client.sMembers(
@@ -119,7 +124,7 @@ class redisService {
         filter,
         subject,
       }),
-    );
+    )
   }
   async deleteSet(
     { filter, subject }: { filter: string; subject: string },
@@ -131,7 +136,7 @@ class redisService {
         subject,
       }),
       members,
-    );
+    )
   }
   async existsSet({ filter, subject }: { filter: string; subject: string }) {
     return await this._client.sCard(
@@ -139,8 +144,8 @@ class redisService {
         filter,
         subject,
       }),
-    );
+    )
   }
 }
 
-export default redisService;
+export default redisService

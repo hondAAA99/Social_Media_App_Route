@@ -1,11 +1,11 @@
-import { SECRET_ADMIN_ACCESS_TOKEN, SECRET_USER_ACCESS_TOKEN, TOKEN_ADMIN_PREFIX, TOKEN_USER_PREFIX, } from "../../config/config.services.js";
-import { TokenVerify } from "../security/jsonWebTokens.js";
-import { ErrorConflict, Errorforbidden, } from "./globalresponse.js";
-import userRepo from "../../DB/repo/user.repo.js";
+import { SECRET_ADMIN_ACCESS_TOKEN, SECRET_USER_ACCESS_TOKEN, TOKEN_ADMIN_PREFIX, TOKEN_USER_PREFIX, } from '../../config/config.services.js';
+import { TokenVerify } from '../security/jsonWebTokens.js';
+import { ErrorConflict, Errorforbidden, } from './globalresponse.js';
+import userRepo from '../../DB/repo/user.repo.js';
 async function authenticateUtilts(authorization) {
-    let [prefix, token] = authorization.split(" ");
+    let [prefix, token] = authorization.split(' ');
     if (!prefix) {
-        Errorforbidden("invalid token");
+        Errorforbidden('invalid token');
     }
     const secret = (function () {
         if (prefix == TOKEN_USER_PREFIX) {
@@ -14,7 +14,7 @@ async function authenticateUtilts(authorization) {
         else if (prefix == TOKEN_ADMIN_PREFIX) {
             return SECRET_ADMIN_ACCESS_TOKEN;
         }
-        return Errorforbidden("invalid token");
+        return Errorforbidden('invalid token');
     })();
     const verify = TokenVerify({
         token,
@@ -24,7 +24,7 @@ async function authenticateUtilts(authorization) {
         id: verify.userId,
     });
     if (!user)
-        ErrorConflict("user does not exists");
+        ErrorConflict('user does not exists');
     return { user, token, decoded: verify };
 }
 export default authenticateUtilts;

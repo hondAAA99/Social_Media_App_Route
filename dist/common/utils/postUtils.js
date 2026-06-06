@@ -1,5 +1,5 @@
 import availabiltyEnum from "../enum/availablity.enum.js";
-export function postAvailbilty(req) {
+export function postAvailability(req) {
     return [
         {
             availablity: availabiltyEnum.onlyMe,
@@ -16,7 +16,7 @@ export function postAvailbilty(req) {
         },
     ];
 }
-export function userDataAvailibilty(req) {
+export function userDataAvailability(req) {
     return [
         {
             availablity: availabiltyEnum.onlyMe,

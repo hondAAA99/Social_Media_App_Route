@@ -10,7 +10,7 @@ import {
 import redisServices from '../../common/services/redis.services.js'
 import { GlobalCompare, Globalhash } from '../../common/security/hash.js'
 import { HydratedDocument, Schema } from 'mongoose'
-import { IUser } from '../../DB/models/user.model.js'
+import { IUser } from '../../DB/models/users/user.model.js'
 import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
 import s3Services from '../../common/services/s3Services.js'
 import postRepo from '../../DB/repo/post.repo.js'

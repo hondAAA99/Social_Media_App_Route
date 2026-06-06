@@ -2,7 +2,7 @@ import { Request } from "express";
 import { IPost } from "../../DB/models/post.model.js";
 import availabiltyEnum from "../enum/availablity.enum.js";
 
-export function postAvailbilty(req: Request) {
+export function postAvailability(req: Request) {
   return [
     {
       availablity: availabiltyEnum.onlyMe,
@@ -19,7 +19,7 @@ export function postAvailbilty(req: Request) {
     },
   ];
 }
-export function userDataAvailibilty(req: Request) {
+export function userDataAvailability(req: Request) {
   return [
     {
       availablity: availabiltyEnum.onlyMe,
