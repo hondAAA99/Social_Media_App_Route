@@ -1,4 +1,4 @@
-import { ErrorInteralServerError } from '../utils/globalresponse.js'
+import { ErrorInternalServerError } from '../utils/globalresponse.js'
 import redis, { createClient, RedisArgument, RedisClientType } from 'redis'
 import { string } from 'zod'
 import { REDIS_CLIENT } from '../../config/config.services.js'
@@ -44,14 +44,14 @@ class redisService {
         (typeof value as any) == string ? value : JSON.stringify(value, null, 2)
       return await this._client.set(key, value, { EX: ttl })
     } catch (err) {
-      ErrorInteralServerError(err)
+      ErrorInternalServerError(err)
     }
   }
 
   async getKey({ key }: { key: string }): Promise<void | string> {
     try {
       if ((!this.keyExists({ key }) as unknown as number) > 0) {
-        ErrorInteralServerError('key expiered')
+        ErrorInternalServerError('key expiered')
       }
       const value = await this._client.get(key)
       try {
@@ -60,7 +60,7 @@ class redisService {
         return value as string
       }
     } catch (err) {
-      ErrorInteralServerError('failed to get the value from cache')
+      ErrorInternalServerError('failed to get the value from cache')
     }
   }
 
@@ -69,7 +69,7 @@ class redisService {
       const value = await this._client.keys(pattern)
       return value
     } catch (err) {
-      ErrorInteralServerError(err)
+      ErrorInternalServerError(err)
     }
   }
 
@@ -81,19 +81,19 @@ class redisService {
       const value = await this._client.del(await this.getAllKeys(key))
       return value
     } catch (err) {
-      ErrorInteralServerError(err)
+      ErrorInternalServerError(err)
     }
   }
 
   async getKeyTtl(key: RedisArgument) {
     try {
       if ((!this.keyExists({ key }) as unknown as number) > 0) {
-        ErrorInteralServerError('key expiered')
+        ErrorInternalServerError('key expiered')
       }
       const value = await this._client.ttl(key)
       return value
     } catch (err) {
-      ErrorInteralServerError(err)
+      ErrorInternalServerError(err)
     }
   }
 
@@ -101,7 +101,7 @@ class redisService {
     try {
       await this._client.incr(key)
     } catch (err) {
-      ErrorInteralServerError(err)
+      ErrorInternalServerError(err)
     }
   }
 

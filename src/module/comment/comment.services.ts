@@ -9,19 +9,22 @@ import {
 } from '../../common/utils/globalresponse.js'
 import s3Services from '../../common/services/s3Services.js'
 import postRepo from '../../DB/repo/post.repo.js'
-import { postAvailbilty } from '../../common/utils/postUtils.js'
-import allowCommentsEnum from '../../common/enum/allowComments.enum.js'
+import { postAvailability } from '../../common/utils/postUtils.js'
 import userRepo from '../../DB/repo/user.repo.js'
 import redisService from '../../common/services/redis.services.js'
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js'
 import { _StrictFilter, HydratedDocument, Schema } from 'mongoose'
 import { randomUUID } from 'crypto'
 import fireBaseServices from '../../common/services/fireBase.services.js'
-import availabiltyEnum from '../../common/enum/availablity.enum.js'
-import path from 'path'
-import { IPost } from '../../DB/models/post.model.js'
-import { IComment } from '../../DB/models/comment.model.js'
-import onModelEnum from '../../common/enum/onModel.enum.js'
+import { IPost } from '../../DB/models/posts/post.interface.js'
+import { IComment } from '../../DB/models/comments/comment.interface.js'
+import {
+  allowCommentsEnum,
+  onModelEnum,
+} from '../../common/enum/post_comment.base.enum.js'
+import {  createCommentDTOBody, createCommentDTOHeader, createCommentDTOParams } from './comment.dto.js'
+
+import { roleEnum } from '../../common/enum/user.base.enum.js'
 
 class commentServices {
   private readonly _commentRepo = new commentRepo()
@@ -34,12 +37,8 @@ class commentServices {
   constructor() {}
 
   createComment = async (req: Request, res: Response, next: NextFunction) => {
-    const { content, tags, onModel } = req.body as {
-      content: string
-      tags: Schema.Types.ObjectId[]
-      onModel: string
-    }
-    const { postId, commentId } = req.params
+    const { content, tags, onModel }: createCommentDTOBody = req.body
+    const { postId, commentId }: createCommentDTOParams = req.params
     const { user } = req
 
     const doc = await (async () => {
@@ -47,7 +46,7 @@ class commentServices {
         return (await this._postRepo.findOne({
           filter: {
             id: postId,
-            $or: postAvailbilty(req),
+            $or: postAvailability(req),
             allowComments: allowCommentsEnum.allow,
           },
         })) as HydratedDocument<IPost>
@@ -60,7 +59,7 @@ class commentServices {
               populate: {
                 path: 'postId',
                 match: {
-                  $or: postAvailbilty(req),
+                  $or: postAvailability(req),
                   allowComments: allowCommentsEnum.allow,
                 },
               },
@@ -147,14 +146,52 @@ class commentServices {
       search: {
         postId,
       },
-      populate: {
-        path: 'comments',
-        match: {
-          commentId: { $exists: false },
-        },
+      options: {
         populate: {
-          path: 'replies',
+          path: 'comments',
+          match: {
+            commentId: { $exists: false },
+          },
+          populate: {
+            path: 'replies',
+          },
         },
+      },
+    })
+
+    SuccessResponse({ res, data: comments })
+  }
+
+  getCommentByIdAndPaginateReplies = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    const { commentId } = req.params
+    const { limit, page } = req.query as unknown as {
+      limit: number
+      page: number
+    }
+    const comments = await this._commentRepo.paginate({
+      limit,
+      page,
+      search: {
+        id: commentId,
+      },
+      options: {
+        populate: [
+          {
+            path: 'comments',
+            match: {
+              commentId: { $exists: false },
+            },
+            populate: [
+              {
+                path: 'replies',
+              },
+            ],
+          },
+        ],
       },
     })
 
@@ -164,12 +201,24 @@ class commentServices {
   updateComment = async (req: Request, res: Response, next: NextFunction) => {
     const { content } = req.body
     const { postId } = req.params
-    const { user } = req
-    if (!user) return next(new Error('Unauthorized'))
+    const { user, files } = req
+    const comment = await this._commentRepo.findOne({
+      filter: {
+        id: postId,
+        createdBy: user?.id,
+      },
+    })
+    if (files) {
+      // await this._s3Services.uploadFiles({
+      //   files: files as Express.Multer.File[],
+      //   path :
+      // })
+    }
+
     const comments = await this._commentRepo.findOneAndUpdate({
       filter: {
         postId,
-        createdBy: user.id,
+        createdBy: user?.id,
       },
       update: {
         content,
@@ -180,35 +229,44 @@ class commentServices {
   }
 
   deleteComments = async (req: Request, res: Response, next: NextFunction) => {
-    const { commentId } = req.body
+    const { commentId } = req.params
     const { user } = req
-    const comment = await this._commentRepo.findById({
-      id: commentId,
-    })
-
-    if (comment?.createdBy != user?.id)
-      ErrorUnAuthorizedRequest('you cannot delete this comment')
-
-    comment?.attachments
-      ? await this._s3Services.deleteFiles({
-          Keys: comment?.attachments,
-        })
-      : undefined
-
-    await this._commentRepo.deleteOne({
-      filter: {
+    const comment: HydratedDocument<IComment> =
+      await this._commentRepo.findById({
         id: commentId,
-        createdBy: user!.id,
-      },
-    })
+      })
 
+    if (!comment) return ErrorNotFound('comment not found')
+    const refModel: HydratedDocument<IComment | IPost> =
+      comment.onModel == onModelEnum.post
+        ? await this._postRepo.findById({ id: comment.refId })
+        : await this._postRepo.findById({
+            id: await this._commentRepo.findById({
+              id: comment.refId,
+              projection: 'id',
+            }),
+          })
+    //admin
+    if (
+      user?.role == roleEnum.admin ||
+      comment.createdBy.toString() == user?.id.toString() ||
+      refModel.createdBy == user?.id
+    ) {
+      comment.deletedAt = new Date()
+      comment.deletedBy = user?.id
+      await comment.save()
+    } else {
+      return ErrorUnAuthorizedRequest(
+        'you can not perform this operation due to be unAuthorized',
+      )
+    }
     SuccessResponse({ res, data: 'comment deleted' })
   }
 
   commentReact = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
     const { commentId } = req.params
-    const { flag } = req.params
+    const { flag } = req.query
 
     const comment = await this._commentRepo.findById({ id: commentId })
     if (!comment) return ErrorNotFound('comment not found')
@@ -227,23 +285,6 @@ class commentServices {
     await comment?.save()
 
     SuccessResponse({ res, data: 'like!' })
-  }
-
-  deleteComment = async (req: Request, res: Response, next: NextFunction) => {
-    const { commentId } = req.params
-    const { postId } = req.params
-    const { user } = req
-
-    if (!user!.id == postId.createdBy)
-      return ErrorUnAuthorizedRequest('you can not perform that request')
-
-    await this._commentRepo.deleteOne({
-      filter: {
-        id: commentId,
-      },
-    })
-
-    SuccessResponse({ res, data: 'comment deleted' })
   }
 
   hideComment = async (req: Request, res: Response, next: NextFunction) => {

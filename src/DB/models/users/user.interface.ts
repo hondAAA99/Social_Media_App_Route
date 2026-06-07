@@ -1,23 +1,23 @@
-import { Schema } from "mongoose"
+import { Schema } from 'mongoose'
 
 export interface IEmailData {
   data: string
-  availibilty: string
+  availability?: string
 }
 
 export interface IPhoneData {
   data: string
-  availibilty: string
+  availability?: string
 }
 
 export interface IAgeData {
   data: Date
-  availibilty: string
+  availability?: string
 }
 
 export interface IGenderData {
   data: string
-  availibilty: string
+  availability?: string
 }
 
 export interface IFriendItem {
@@ -26,7 +26,7 @@ export interface IFriendItem {
 }
 
 export interface IFriendsData {
-  availibilty: string
+  availability?: string
   data: IFriendItem[]
 }
 
@@ -47,9 +47,10 @@ export interface IUser {
   password: string
   createdAt: Date
   updatedAt: Date
-  confirmed?: boolean | undefined
+  confirmed?: boolean
   provider?: string
   deletedAt?: Date
-  twoStepVerfiction: boolean
-  creadnatials?: Date
+  deletedBy?: Schema.Types.ObjectId
+  twoStepVerification: boolean
+  credentials?: Date
 }

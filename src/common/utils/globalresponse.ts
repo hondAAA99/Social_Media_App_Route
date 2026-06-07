@@ -46,7 +46,7 @@ export const ErrorNotFound = (message: string = "failed to find the data") => {
 export const ErrorConflict = (message: string = "conflict") => {
   throw new ErrorResponse({ message, statusCode: 409 });
 };
-export const ErrorInteralServerError = (
+export const ErrorInternalServerError = (
   message: any,
   statusCode: number = 500,
 ) => {

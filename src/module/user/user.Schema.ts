@@ -4,7 +4,7 @@ import { genRules } from '../../common/utils/validationGeneralRules.js'
 export const updatePasswordSchema = {
   body: zod
     .object({
-      email: zod.email(),
+      email: genRules.email,
       oldPassword: zod.string(),
       newPassword: zod.string(),
       newCPassword: zod.string(),
@@ -14,14 +14,14 @@ export const updatePasswordSchema = {
         ctx.addIssue({
           code: zod.z.ZodIssueCode.custom,
           message: 'passwords do not match',
-          path: ['cpassword'],
+          path: ['newCPassword'],
         })
       }
     }),
 }
 export const lockProfileSchema = {
   query: zod.object({
-    flag: zod.enum(['lock', 'unlock']),
+    flag: genRules.lockProfileFlag,
   }),
 }
 export const updateEmailSchema = {
@@ -60,19 +60,21 @@ export const sendFriendRequestSchema = {
     requestedUserId: genRules.id,
   }),
 }
+
 export const handleFriendRequestSchema = {
   params: zod.object({
     requestingUserId: genRules.id,
-    flag : zod.enum(['accept', 'reject']),
+    flag : genRules.friendRequestFlag,
   }),
 }
 export const removeFriendSchema = {
   params: zod.object({
-    friendId: genRules.id,
+    removedFriendId: genRules.id,
   }),
 }
 export const blockUserSchema = {
   params: zod.object({
     blockedUserId: genRules.id,
+    flag : genRules.blockUserFlag,
   }),
 }

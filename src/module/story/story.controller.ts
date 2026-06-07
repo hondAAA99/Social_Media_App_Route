@@ -1,15 +1,43 @@
 import { Router } from 'express'
 import storyServices from './story.services.js'
 import { authenticate } from '../../common/middleware/authenticate.js'
+import { fileUpload } from '../../common/middleware/multer.js'
+import multerFileEnum from '../../common/enum/file.base.enum.js'
+import {
+  createStory,
+  deleteStory,
+  getViewers,
+  viewStory,
+} from './story.schema.js'
+import { validationMiddleWare } from '../../common/middleware/validation.js'
 
 const storyRouter: Router = Router()
 
-storyRouter.post('/createStory', authenticate, storyServices.createStory)
+storyRouter.post(
+  '/createStory',
+  fileUpload({ fileType: multerFileEnum.image }).array('files'),
+  validationMiddleWare(createStory),
+  authenticate,
+  storyServices.createStory,
+)
 storyRouter.get('/feed', authenticate, storyServices.getFeed)
-storyRouter.get('/view-story/:storyId', authenticate, storyServices.viewStory)
-storyRouter.get('/getViewers/:storyId', authenticate, storyServices.getViewers)
+storyRouter.get(
+  '/view-story/:storyId',
+  validationMiddleWare(viewStory),
+  authenticate,
+  storyServices.viewStory,
+)
+
+storyRouter.get(
+  '/getViewers/:storyId',
+  validationMiddleWare(getViewers),
+  authenticate,
+  storyServices.getViewers,
+)
+
 storyRouter.delete(
   '/deleteStory/:storyId',
+  validationMiddleWare(deleteStory),
   authenticate,
   storyServices.deleteStory,
 )

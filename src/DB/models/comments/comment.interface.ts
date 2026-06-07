@@ -12,4 +12,6 @@ export interface IComment {
   onModel: string
   reacts: IReacts
   hideComment: boolean
+  deletedAt : Date;
+  deletedBy : Schema.Types.ObjectId;
 }

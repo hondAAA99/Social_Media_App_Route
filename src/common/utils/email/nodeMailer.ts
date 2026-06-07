@@ -6,6 +6,7 @@ import {
 import mailEnum from "../../enum/mail.enum.js";
 import Mail from "nodemailer/lib/mailer/index.js";
 import { sendOtp } from "./email.templetes.js";
+import { ErrorInternalServerError } from "../globalresponse.js";
 
 const transport = nodemailer.createTransport({
   service: "gmail",
@@ -24,18 +25,16 @@ export async function sendMail({
   subject: string;
   data: any;
 }) {
-  console.log(data)
   await transport.sendMail({
     from: MAIL_APP_SENDER,
     to,
     subject,
-    html: sendOtp(data) ,// function(){
-    // if (subject == mailEnum.consrimSingUp) {
-    //   return sendOtp(data);
-    // } 
-  } as Mail.Options);
+    html: sendOtp(data) ,
+  } as Mail.Options).catch((err) => {
+    ErrorInternalServerError("error in sending email");
+  });
 }
 
-export const genrateOtp = () => {
+export const generateOtp = () => {
   return Math.floor(Math.random() * 100000);
 };

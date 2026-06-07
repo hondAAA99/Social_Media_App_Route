@@ -2,7 +2,7 @@ import { Server as httpServer } from 'node:http'
 import { Server, Socket } from 'socket.io'
 import { authenticateSocket } from '../../common/middleware/authenticate.js'
 import { ErrorInteralServerError } from '../../common/utils/globalresponse.js'
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js'
 import redisServices from '../../common/services/redis.services.js'
 import chatGateWay from '../chat/realtime/chat.gateWay.js'
 

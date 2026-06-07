@@ -4,54 +4,43 @@ import {
   signUpSchema,
   signInSchema,
   confirmSignUpSchema,
-  forgetPassword,
-  resetPassowrd,
+  resetPassword,
   confirmLoginSchema,
-  EnableTwoStepVerfiction,
+  resendOtp,
+  sendOtp,
 } from './auth.validationSchema.js'
 import { validationMiddleWare } from '../../common/middleware/validation.js'
 
 export const authRouter: Router = Router()
 
 authRouter.post('/sign-up', validationMiddleWare(signUpSchema), auth.signUp)
+authRouter.post(
+  '/confirm-Mail/:flag',
+  validationMiddleWare(confirmSignUpSchema),
+  auth.confirmMail,
+)
 
 authRouter.post('/log-in', validationMiddleWare(signInSchema), auth.logIn)
-
-authRouter.get(
-  '/enable-two-step-verfiction',
-  validationMiddleWare(EnableTwoStepVerfiction),
-  auth.EnableTwoStepVerfiction,
-)
-
-authRouter.post(
-  '/confirm-Mail-And-Enable-Two-Step-Veffiction',
-  validationMiddleWare(confirmSignUpSchema),
-  auth.confirmMailAndEnableTwoStepVeffiction,
-)
-
 authRouter.post(
   '/confirm-login-in',
   validationMiddleWare(confirmLoginSchema),
   auth.confirmLogin,
 )
 
-authRouter.post(
-  '/resend-otp',
-  validationMiddleWare(resetPassowrd),
-  auth.reSendOtp,
-)
+authRouter.get('/send-otp/:flag', validationMiddleWare(sendOtp), auth.sendOtp)
+
+authRouter.post('/resend-otp', validationMiddleWare(resendOtp), auth.reSendOtp)
 
 authRouter.post('/sign-with-google', auth.signUpAndLoginWithGmail)
 
-authRouter.put(
-  '/forget-password',
-  validationMiddleWare(forgetPassword),
-  auth.forgetPassword,
-)
-
 authRouter.patch(
   '/reset-password',
-  validationMiddleWare(resetPassowrd),
+  validationMiddleWare(resetPassword),
   auth.resetPassowrd,
+)
+authRouter.get(
+  '/access-token',
+  validationMiddleWare(resetPassword),
+  auth.generateAccessToken,
 )
 authRouter.get('/refresh-token', auth.generateAccessToken)

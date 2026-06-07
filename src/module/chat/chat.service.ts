@@ -7,7 +7,7 @@ import {
 import { Server, Socket } from 'socket.io'
 import userRepo from '../../DB/repo/user.repo.js'
 import redisService from '../../common/services/redis.services.js'
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js'
 
 class chatServices {
   private readonly _chatRepo = new chatRepo()

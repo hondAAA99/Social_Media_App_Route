@@ -1,21 +1,22 @@
 import { NextFunction, Request, Response } from 'express'
 import {
   ErrorConflict,
+  ErrorInteralServerError,
   ErrorNotFound,
   SuccessResponse,
 } from '../../common/utils/globalresponse.js'
 import postRepo from '../../DB/repo/post.repo.js'
-import { createPostDTO, updatePostDTO } from './post.dto.js'
+import { createPostDTO, deletePostDTO, updatePostDTO } from './post.dto.js'
 import userRepo from '../../DB/repo/user.repo.js'
 import redisServices from '../../common/services/redis.services.js'
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js'
 import s3Services from '../../common/services/s3Services.js'
 import { randomUUID } from 'crypto'
-import { ObjectId, Schema } from 'mongoose'
+import { HydratedDocument, ObjectId, Schema } from 'mongoose'
 import fireBaseServices from '../../common/services/fireBase.services.js'
 import { postAvailability, searchQuery } from '../../common/utils/postUtils.js'
-import reactsEnum from '../../common/enum/reactEnum.js'
-import roleEnum from '../../common/enum/role.enum.js'
+import { IPost } from '../../DB/models/posts/post.interface.js'
+import { roleEnum } from '../../common/enum/user.base.enum.js'
 
 class postServices {
   private readonly _postModel = new postRepo()
@@ -82,7 +83,7 @@ class postServices {
         await this._s3Service.deleteFiles({
           Keys,
         })
-        ErrorinternalServerError('failed to create post')
+        ErrorInteralServerError('failed to create post')
       }
 
       await this._fireBase.sendNotifications({
@@ -108,41 +109,83 @@ class postServices {
         deletedBy: { $exists: false },
         deletedAt: { $exists: false },
       },
-      populate: [
-        {
-          path: 'comments',
-          match: {
-            commentId: { $exists: false },
+      options: {
+        populate: [
+          {
+            path: 'comments',
+            match: {
+              commentId: { $exists: false },
+            },
+            populate: {
+              path: 'replies',
+            },
           },
-          populate: {
-            path: 'replies',
-          },
-        },
-      ],
+        ],
+      },
     })
 
     SuccessResponse({ res, data: posts })
   }
 
   reactPost = async (req: Request, res: Response, next: NextFunction) => {
-    const postId = req.params.postId
+    const { postId } = req.params
     const { flag } = req.query
     const { user } = req
-    const post = await this._postModel.findById({ id: postId })
+    const post: HydratedDocument<IPost> = await this._postModel.findById({
+      id: postId,
+    })
     if (!post) return ErrorNotFound('post not found')
 
-    const reactPath = `reacts.reactsCount.${flag}`
-    await this._postModel.findByIdAndUpdate({
-      id: postId,
-      update: {
-        $inc: { reactPath: 1, ' reacts.reactsCount.total': 1 },
-      },
+    const reactedUser = post.reacts.reactedUsers.find(fr => {
+      return fr.userId.toString() == user?.id.toString() ? fr : null
     })
-    post.reacts.reactedUsers.push({
-      userId: user?.id!,
-      react: flag as string,
-    })
-    await post.save()
+
+    if (!reactedUser) {
+      const reactPath = `reacts.reactsCount.${flag}`
+      await this._postModel.findByIdAndUpdate({
+        id: postId,
+        update: {
+          $inc: { reactPath: 1, 'reacts.reactsCount.total': 1 },
+        },
+      })
+      post.reacts.reactedUsers.push({
+        userId: user?.id!,
+        react: flag as string,
+      })
+      await post.save()
+    } else {
+      if (reactedUser.react == flag) {
+        let flagPath = `reacts.reactedUsers.${flag}`
+        await this._postModel.findOneAndUpdate({
+          filter: {
+            id: postId,
+            availablity: { $or: [postAvailability(req)] },
+          },
+          update: {
+            $pull: { 'reacts.reactedUsers': reactedUser },
+            'reacts.reactsCount.total': { $dec: 1 },
+            flagPath: { $dec: 1 },
+          },
+        })
+      } else {
+        await this._postModel.findOneAndUpdate({
+          filter: {
+            id: postId,
+            availablity: { $in: [postAvailability(req)] },
+            'reacts.reactedUser.userId': user.id,
+          },
+          update: {
+            'reacts.reactedUser.$.react': flag,
+            $inc: {
+              [`reacts.reactsCount.${reactedUser.react}`]: -1,
+              [`reacts.reactsCount.${reactedUser.react}`]: 1,
+            },
+            newflagPath: { $inc: 1 },
+            oldflagPath: { $dec: 1 },
+          },
+        })
+      }
+    }
 
     SuccessResponse({ res, data: 'like!' })
   }
@@ -158,7 +201,7 @@ class postServices {
       removeFiles,
       removeTags,
       hideLikeCount,
-    }: updatePostDTO = req.body
+    } = req.body
 
     const post = await this._postModel.findOne({
       filter: {
@@ -221,7 +264,7 @@ class postServices {
       }
     }
 
-    post!.tags = [...updateTags].map(
+    const newTags = updateTags.map(
       (id: string) => new Schema.Types.ObjectId(id),
     )
 
@@ -247,16 +290,16 @@ class postServices {
 
   deletePost = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
-    const { postId } = req.params
+    const { postId } = req.params as deletePostDTO
 
     const post = await this._postModel.findOneAndUpdate({
       filter:
         user?.role == roleEnum.admin
           ? {
-              id: postId as ObjectId,
+              id: postId as unknown as ObjectId,
             }
           : {
-              id: postId as ObjectId,
+              id: postId as unknown as ObjectId,
               createdBy: user?.id as ObjectId,
             },
       update: {

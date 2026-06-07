@@ -1,26 +1,47 @@
-import roleEnum from '../../../common/enum/role.enum.js'
-import genderEnum from '../../../common/enum/gender.enum.js'
-import providerEnum from '../../../common/enum/provider.enum.js'
-import availabiltyEnum from '../../../common/enum/availablity.enum.js'
-import { friendsFlagEnum } from '../../../common/enum/friendsFlag.enum.js'
-import { IAgeData, IEmailData, IFriendItem, IFriendsData, IGenderData, IPhoneData, IUser } from './user.interface.js'
+import {
+  IAgeData,
+  IEmailData,
+  IFriendItem,
+  IFriendsData,
+  IGenderData,
+  IPhoneData,
+  IUser,
+} from './user.interface.js'
 import { Schema } from 'mongoose'
 import UserSchemaHelpersCalling from './schema.helpers.js'
-
+import AvailabilityEnum from '../../../common/enum/availablity.enum.js'
+import {
+  friendsFlagEnum,
+  genderEnum,
+  providerEnum,
+  roleEnum,
+} from '../../../common/enum/user.base.enum.js'
 
 const emailSchema = new Schema<IEmailData>({
   data: { type: String },
-  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+  availability: {
+    type: String,
+    enum: Object.values(AvailabilityEnum),
+    default: AvailabilityEnum.onlyMe,
+  },
 })
 
 const phoneSchema = new Schema<IPhoneData>({
   data: { type: String },
-  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+  availability: {
+    type: String,
+    enum: Object.values(AvailabilityEnum),
+    default: AvailabilityEnum.onlyMe,
+  },
 })
 
 const ageSchema = new Schema<IAgeData>({
   data: { type: Date },
-  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+  availability: {
+    type: String,
+    enum: Object.values(AvailabilityEnum),
+    default: AvailabilityEnum.onlyMe,
+  },
 })
 
 const genderSchema = new Schema<IGenderData>({
@@ -29,20 +50,28 @@ const genderSchema = new Schema<IGenderData>({
     enum: Object.values(genderEnum),
     default: genderEnum.preferNotToSay,
   },
-  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+  availability: {
+    type: String,
+    enum: Object.values(AvailabilityEnum),
+    default: AvailabilityEnum.onlyMe,
+  },
 })
 
 const friendItemSchema = new Schema<IFriendItem>({
   flag: {
     type: String,
     enum: Object.values(friendsFlagEnum),
-    default: friendsFlagEnum.requestd,
+    default: friendsFlagEnum.requested,
   },
   friendId: { type: Schema.Types.ObjectId, ref: 'users' },
 })
 
 const friendsSchema = new Schema<IFriendsData>({
-  availibilty: { type: String, enum: Object.values(availabiltyEnum) },
+  availability: {
+    type: String,
+    enum: Object.values(AvailabilityEnum),
+    default: AvailabilityEnum.onlyMe,
+  },
   data: {
     type: [friendItemSchema],
   },
@@ -79,7 +108,7 @@ export const userSchema = new Schema<IUser>(
       type: String,
       default: {
         data: undefined,
-        availibilty: availabiltyEnum.public,
+        availability: AvailabilityEnum.public,
       },
       required: function (this: any): boolean {
         return this.provider === providerEnum.system
@@ -89,7 +118,7 @@ export const userSchema = new Schema<IUser>(
       type: phoneSchema,
       default: {
         data: '',
-        availibilty: availabiltyEnum.onlyMe,
+        availability: AvailabilityEnum.onlyMe,
       },
       required: function (this: any): boolean {
         return this.provider === providerEnum.system
@@ -99,7 +128,7 @@ export const userSchema = new Schema<IUser>(
       type: ageSchema,
       default: {
         data: undefined,
-        availibilty: availabiltyEnum.onlyMe,
+        availability: AvailabilityEnum.onlyMe,
       },
       required: function (this: any): boolean {
         return this.provider === providerEnum.system
@@ -109,14 +138,15 @@ export const userSchema = new Schema<IUser>(
       type: genderSchema,
       default: {
         data: genderEnum.preferNotToSay,
-        availibilty: availabiltyEnum.onlyMe,
+        availability: AvailabilityEnum.onlyMe,
       },
     },
     profileLock: { type: Boolean, default: false },
     confirmed: { type: Boolean, default: false },
-    twoStepVerfiction: { type: Boolean, default: false },
-    creadnatials: { type: Date },
+    twoStepVerification: { type: Boolean, default: false },
+    credentials: { type: Date },
     deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId },
   },
   {
     timestamps: true,
@@ -126,6 +156,5 @@ export const userSchema = new Schema<IUser>(
     toJSON: {},
   },
 )
-
 
 UserSchemaHelpersCalling()

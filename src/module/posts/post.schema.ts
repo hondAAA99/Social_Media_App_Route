@@ -1,9 +1,8 @@
 import z, { array } from "zod";
-import availabiltyEnum from "../../common/enum/availablity.enum.js";
-import allowCommentsEnum from "../../common/enum/allowComments.enum.js";
 import { Types } from "mongoose";
 import { genRules } from "../../common/utils/validationGeneralRules.js";
-import hideLikeCount from "../../common/enum/hideLikeCounts.enum.js";
+import { allowCommentsEnum, LikeCountAvailability } from "../../common/enum/post_comment.base.enum.js";
+import AvailabilityEnum from "../../common/enum/availablity.enum.js";
 
 export const createPostSchema = {
   body: z
@@ -13,8 +12,8 @@ export const createPostSchema = {
       createdBy: z.string(),
       tags: z.array(genRules.id).optional,
       allowComments: z.enum(allowCommentsEnum).default(allowCommentsEnum.allow),
-      hideLikeCount: z.enum(hideLikeCount).default(hideLikeCount.show),
-      availability: z.enum(availabiltyEnum).default(availabiltyEnum.freinds),
+      hideLikeCount: z.enum(LikeCountAvailability).default(LikeCountAvailability.show),
+      availability: z.enum(AvailabilityEnum).default(AvailabilityEnum.friends),
     })
     .superRefine((data, ctx) => {
       if (!data.content && !data?.attachments?.length) {
@@ -50,7 +49,7 @@ export const createPostSchema = {
 export const likePostSchema = {
   params: z
     .strictObject({
-      postId: z.string(),
+      postId: genRules.id,
     })
     .superRefine((data, ctx) => {
       if (!Types.ObjectId.isValid(data.postId)) {
@@ -61,6 +60,9 @@ export const likePostSchema = {
         });
       }
     }),
+    query : z.object({
+      flag : z.enum(['like','dislike'])
+    })
 };
 
 export const updatePostSchema = {
@@ -72,8 +74,8 @@ export const updatePostSchema = {
       tags: z.array(genRules.id).optional,
       removeTags: z.array(genRules.id).optional,
       allowComment: z.enum(allowCommentsEnum).optional(),
-      hideLikeCount: z.enum(hideLikeCount).optional(),
-      availability: z.enum(availabiltyEnum).optional(),
+      hideLikeCount: z.enum(LikeCountAvailability).optional(),
+      availability: z.enum(AvailabilityEnum).optional(),
     })
     .superRefine((data, ctx) => {
       if (
@@ -100,5 +102,9 @@ export const updatePostSchema = {
       }
     }),
 
+  params: likePostSchema.params,
+};
+
+export const deletePostSchema = {
   params: likePostSchema.params,
 };

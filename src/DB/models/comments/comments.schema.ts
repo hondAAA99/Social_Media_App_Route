@@ -31,6 +31,8 @@ export const commentSchema = new Schema<IComment>({
     type: Boolean,
     default: false,
   },
+  deletedAt: { type: Date },
+  deletedBy: { type: Schema.Types.ObjectId, ref: 'users' },
 })
 
 CommentSchemaHelpersCalling()

@@ -10,22 +10,34 @@ import {
 import redisServices from '../../common/services/redis.services.js'
 import { GlobalCompare, Globalhash } from '../../common/security/hash.js'
 import { HydratedDocument, Schema } from 'mongoose'
-import { IUser } from '../../DB/models/users/user.model.js'
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js'
 import s3Services from '../../common/services/s3Services.js'
 import postRepo from '../../DB/repo/post.repo.js'
 import { Globaldecrypt, Globalencrypt } from '../../common/security/encrypt.js'
-import { postAvailbilty } from '../../common/utils/postUtils.js'
 import availabiltyEnum from '../../common/enum/availablity.enum.js'
-import {
-  friendsFlagEnum,
-  friendsRequestEnum,
-} from '../../common/enum/friendsFlag.enum.js'
+
 import fireBaseServices from '../../common/services/fireBase.services.js'
 import { sendEmail } from '../../common/utils/email/sendEmail.js'
 import mailEnum from '../../common/enum/mail.enum.js'
-import blockUserEnum from '../../common/enum/blockUser.enum.js'
 import storyRepo from '../../DB/repo/story.repo.js'
+import {
+  blockUserSchemaDTO,
+  handleFriendRequestSchemaDTO,
+  lockProfileDTO,
+  removeFriendSchemaDTO,
+  sendFriendRequestSchemaDTO,
+  shareProfileSchemaDTO,
+  updateEmailConfirmationSchemaDTO,
+  updateEmailSchemaDTO,
+  updatePasswordSchemaDTO,
+  updateProfileSchemaDTO,
+} from './user.dto.js'
+import { IUser } from '../../DB/models/users/user.interface.js'
+import {
+  blockUserEnum,
+  friendsFlagEnum,
+  friendsRequestEnum,
+} from '../../common/enum/user.base.enum.js'
 
 class userServices {
   private readonly _userModel = new userRepo()
@@ -39,7 +51,7 @@ class userServices {
 
   lockProfile = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
-    const { flag } = req.query
+    const { flag } = req.query as lockProfileDTO
     if (user?.profileLock && flag == 'lock') {
       return ErrorConflict('the profile is already locked')
     } else if (!user?.profileLock && flag == 'unlock') {
@@ -57,7 +69,7 @@ class userServices {
 
   ShareProfile = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
-    const { userId } = req.params
+    const { userId } = req.params as shareProfileSchemaDTO
     const sharedUser = await this._userModel.findById({ id: userId })
 
     if (
@@ -70,23 +82,23 @@ class userServices {
           userName: sharedUser?.userName,
           profilePicture: sharedUser?.profilePicture,
           email:
-            sharedUser?.email.availibilty == availabiltyEnum.public
+            sharedUser?.email.availability == availabiltyEnum.public
               ? sharedUser?.email.data
               : undefined,
           friends:
-            sharedUser?.friends.availibilty == availabiltyEnum.public
+            sharedUser?.friends.availability == availabiltyEnum.public
               ? sharedUser?.friends.data
               : undefined,
           phone:
-            sharedUser?.phone?.availibilty == availabiltyEnum.public
+            sharedUser?.phone?.availability == availabiltyEnum.public
               ? sharedUser?.phone.data
               : undefined,
           age:
-            sharedUser?.age?.availibilty == availabiltyEnum.public
+            sharedUser?.age?.availability == availabiltyEnum.public
               ? sharedUser?.age.data
               : undefined,
           gender:
-            sharedUser?.gender?.availibilty == availabiltyEnum.public
+            sharedUser?.gender?.availability == availabiltyEnum.public
               ? sharedUser?.gender.data
               : undefined,
           createdAt: sharedUser?.createdAt,
@@ -142,7 +154,8 @@ class userServices {
   }
 
   updateProfile = async (req: Request, res: Response, next: NextFunction) => {
-    const { firstName, lastName, age, gender, phone, friends } = req.body
+    const { firstName, lastName, age, gender, phone, friends } =
+      req.body as updateProfileSchemaDTO
     const { file } = req
     const { user } = req.body
     await this._userModel.findByIdAndUpdate({
@@ -151,12 +164,12 @@ class userServices {
         firstName,
         lastName,
         'age.data': age?.data,
-        'age.availibilty': age?.availibilty,
+        'age.availability': age?.availability,
         'gender.data': gender?.data,
-        'gender.availibilty': gender?.availibilty,
+        'gender.availability': gender?.availability,
         'phone.data': Globalencrypt({ plainText: phone?.data! }),
-        'phone.availibilty': phone?.availibilty,
-        'friends.availibilty': friends.availibilty,
+        'phone.availability': phone?.availability,
+        'friends.availability': friends?.availability,
         profilePicture: file
           ? await this._s3services.uploadFile({
               file: req.file as Express.Multer.File,
@@ -170,8 +183,8 @@ class userServices {
   }
 
   updatePassword = async (req: Request, res: Response, next: NextFunction) => {
-    const { oldPassword, newPassword } = req.body
-    const user: HydratedDocument<IUser> = req.user as HydratedDocument<IUser>
+    const { oldPassword, newPassword } = req.body as updatePasswordSchemaDTO
+    const user: HydratedDocument<IUser> = req.user
     const hashOldPassword = user.password
     if (!GlobalCompare({ plainText: oldPassword, hashText: hashOldPassword }))
       ErrorUnAuthorizedRequest('passwords does not match')
@@ -186,13 +199,14 @@ class userServices {
 
   updateEmail = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
-    const { email } = req.body
+    const { email } = req.body as updateEmailSchemaDTO
     const emailExists = await this._userModel.findOne({
       filter: {
+        id: user?.id,
         'email.data': email,
       },
     })
-    if (emailExists) return ErrorNotFound('email is used by anthor user')
+    if (emailExists) return ErrorNotFound('email is used by another user')
 
     await sendEmail({
       to: email,
@@ -209,7 +223,7 @@ class userServices {
     next: NextFunction,
   ) => {
     const { user } = req
-    const { newEmail, otp } = req.body
+    const { newEmail, otp } = req.body as updateEmailConfirmationSchemaDTO
 
     const cachedOtp = (await this._redisServices.getKey({
       key: this._redisServices.cacheKey({
@@ -237,9 +251,9 @@ class userServices {
 
   deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
-    await this._userModel.findByIdAndDelete({
-      id: user!.id,
-    })
+    user.deletedAt = new Date()
+    user.deletedBy = user?.Id
+    await user.save()
 
     SuccessResponse({ res, data: 'user deleted' })
   }
@@ -272,7 +286,7 @@ class userServices {
     next: NextFunction,
   ) => {
     const { user } = req
-    const { requestedUserId } = req.params
+    const { requestedUserId } = req.params as sendFriendRequestSchemaDTO
 
     const requestedUser = await this._userModel.findById({
       id: requestedUserId,
@@ -282,7 +296,7 @@ class userServices {
 
     requestedUser?.friends.data.push({
       friendId: user?.id!,
-      flag: friendsFlagEnum.requestd,
+      flag: friendsFlagEnum.requested,
     })
 
     await requestedUser?.save()
@@ -306,7 +320,8 @@ class userServices {
     next: NextFunction,
   ) => {
     const { user } = req
-    const { requestingUserId, flag } = req.params
+    const { requestingUserId, flag } =
+      req.params as handleFriendRequestSchemaDTO
     const requestingUser = await this._userModel.findById({
       id: requestingUserId,
     })
@@ -317,7 +332,7 @@ class userServices {
       flag == friendsRequestEnum.accept ||
       flag == friendsRequestEnum.reject
     ) {
-      user?.friends.data.map(f => {
+      user?.friends.data.map((f: HydratedDocument<IFriend>) => {
         if (f.friendId == requestingUserId) {
           flag == friendsRequestEnum.accept
             ? (f.flag = friendsFlagEnum.friend)
@@ -348,7 +363,7 @@ class userServices {
 
   removeFriend = async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req
-    const { removedFriendId } = req.params
+    const { removedFriendId } = req.params as removeFriendSchemaDTO
     const removedUser = await this._userModel.findById({ id: removedFriendId })
 
     if (!removedUser) ErrorNotFound('user not Found')
@@ -370,7 +385,7 @@ class userServices {
   }
 
   blockUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { blockedUserId, flag } = req.params
+    const { blockedUserId, flag } = req.params as blockUserSchemaDTO
     const { user } = req
 
     const blockedUser = await this._userModel.findById({ id: blockedUserId })

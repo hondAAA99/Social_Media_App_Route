@@ -14,7 +14,7 @@ import { IUser } from '../../DB/models/users/user.model.js'
 import { friendsFlagEnum } from '../../common/enum/friendsFlag.enum.js'
 import { IStory } from '../../DB/models/story.model.js'
 import redisService from '../../common/services/redis.services.js'
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js'
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js'
 
 class storyServices {
   private readonly _userModel = new userRepo()
@@ -25,14 +25,13 @@ class storyServices {
   constructor() {}
 
   createStory = async (req: Request, res: Response, next: NextFunction) => {
-    const { user } = req
-    const { file } = req
+    const { user, files } = req
     const { text, backGroundColor, excludeUsers, availiabilty } = req.body
     let url
 
-    if (file) {
-      url = await this._s3services.uploadFile({
-        file: file!,
+    if (files) {
+      url = await this._s3services.uploadFiles({
+        files: files as Express.Multer.File[],
         path: `users/${user?.email.data}/storiess`,
       })
     }

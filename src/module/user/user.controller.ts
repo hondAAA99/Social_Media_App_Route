@@ -11,6 +11,7 @@ import {
   shareProfileSchema,
   updateEmailConfirmationSchema,
   updatePasswordSchema,
+  updateProfileSchema,
 } from './user.Schema.js'
 import { validationMiddleWare } from '../../common/middleware/validation.js'
 import chatRouter from '../chat/chat.controller.js'
@@ -35,7 +36,7 @@ userRouter.get(
   authenticate,
   userServices.ShareProfile,
 )
-userRouter.put('/update-profile', authenticate, userServices.updateProfile)
+userRouter.put('/update-profile', validationMiddleWare(updateProfileSchema), authenticate, userServices.updateProfile)
 userRouter.delete('/delete-user', authenticate, userServices.deleteUser)
 
 userRouter.get(
@@ -49,7 +50,6 @@ userRouter.get(
   '/lock-profile',
   validationMiddleWare(lockProfileSchema),
   authenticate,
-
   userServices.lockProfile,
 )
 userRouter.get(

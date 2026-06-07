@@ -9,20 +9,16 @@ import { TokenVerify } from '../security/jsonWebTokens.js'
 import {
   ErrorConflict,
   Errorforbidden,
-  ErrorUnAuthorizedRequest,
 } from './globalresponse.js'
 import jsonwebtoken from 'jsonwebtoken'
 import userRepo from '../../DB/repo/user.repo.js'
-import redisServices from '../services/redis.services.js'
-import { IUser } from '../../DB/models/users/user.model.js'
-import cacheKeyEnum from '../enum/cacheKey.enum.js'
+import { IUser } from '../../DB/models/users/user.interface.js'
 
 async function authenticateUtilts(authorization: string) {
   let [prefix, token] = authorization.split(' ') as [string, string]
   if (!prefix) {
     Errorforbidden('invalid token')
   }
-
   const secret: string = (function () {
     if (prefix == TOKEN_USER_PREFIX) {
       return SECRET_USER_ACCESS_TOKEN

@@ -1,4 +1,3 @@
-import mongoose from 'mongoose'
 import { userSchema } from './users.schema.js'
 
 const UserSchemaHelpersCalling = () => {
@@ -23,30 +22,58 @@ const UserSchemaHelpersCalling = () => {
     }
   })
 
-  userSchema.pre(
-    ['deleteMany', 'deleteOne', 'findOneAndDelete'],
-    async function () {
-      const condition = this.getQuery()
-      const userId = condition._id
-      await Promise.all([
-        mongoose.models.users!.findByIdAndUpdate(userId, {
-          deletedAt: Date.now(),
-        }),
-        mongoose.models.posts!.findOneAndUpdate(
-          {
-            createdBy: userId,
-          },
-          { deletedAt: Date.now() },
-        ),
-        mongoose.models.comments!.findOneAndUpdate(
-          {
-            createdBy: userId,
-          },
-          { deletedAt: Date.now() },
-        ),
-      ])
-    },
-  )
+  // userSchema.pre(
+  //   ['deleteMany', 'deleteOne', 'findOneAndDelete'],
+  //   async function () {
+  //     const condition = this.getQuery()
+  //     const userId = condition._id
+  //     await Promise.all([
+  //       mongoose.models.users!.findByIdAndUpdate(userId, {
+  //         deletedAt: Date.now(),
+  //       }),
+  //       mongoose.models.posts!.findOneAndUpdate(
+  //         {
+  //           createdBy: userId,
+  //         },
+  //         { deletedAt: Date.now() },
+  //       ),
+  //       mongoose.models.comments!.findOneAndUpdate(
+  //         {
+  //           createdBy: userId,
+  //         },
+  //         { deletedAt: Date.now() },
+  //       ),
+  //     ])
+  //   },
+  // )
+
+  // userSchema.pre(['findOneAndUpdate'], async function () {
+  //   const update = this.getUpdate()
+  //   const filter = this.getFilter()
+  //   if (update!.deletedAt) {
+  //     await Promise.all([
+  //       postModel.updateMany(
+  //         {
+  //           createdBy: filter.id,
+  //         },
+  //         { deletedAt: new Date(), deletedBy: filter.id },
+  //       ),
+  //       commentModel.updateMany(
+  //         {
+  //           createdBy: filter.id,
+  //         },
+  //         { deletedAt: new Date(), deletedBy: filter.id },
+  //       ),
+  //       commentModel.updateMany(
+  //         {
+  //           onModel : onModelEnum.post,
+  //           refId : { $in : []}
+  //         },
+  //         { deletedAt: new Date(), deletedBy: filter.id },
+  //       ),
+  //     ])
+  //   }
+  // })
 
   userSchema.index({ 'story.createdAt': 1 }, { expireAfterSeconds: 0 })
 }

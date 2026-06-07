@@ -53,15 +53,18 @@ abstract class repoBase<Tdocument> {
   async findById({
     id,
     projection,
-    populate,
+    options,
   }: {
     id: Schema.Types.ObjectId | any
     projection?: ProjectionType<Tdocument> | null | undefined
-    populate?: PopulateOptions | null | undefined
+    options?: QueryOptions<Tdocument>
   }): Promise<HydratedDocument<Tdocument> | null> {
     return await this._model
       .findById(id, projection)
-      .populate(populate as PopulateOptions)
+      .skip(options?.skip!)
+      .limit(options?.limit!)
+      .sort(options?.sort)
+      .populate(options?.populate as PopulateOptions)
   }
 
   async findByIdAndUpdate({
@@ -139,15 +142,13 @@ abstract class repoBase<Tdocument> {
   async paginate<T>({
     limit,
     page,
-    populate,
     search = {},
-    sort,
+    options,
   }: {
     limit: number
     page: number
-    populate?: any
-    sort?: any
     search?: QueryFilter<T>
+    options?: QueryOptions<Tdocument>
   }) {
     limit = !limit || limit < 0 ? 1 : Number(limit)
     page = !page || page < 0 ? 2 : Number(page)
@@ -160,8 +161,7 @@ abstract class repoBase<Tdocument> {
         options: {
           skip,
           limit,
-          sort,
-          populate,
+          options,
         },
       }),
       this._model.countDocuments({ ...(search ?? {}) }),

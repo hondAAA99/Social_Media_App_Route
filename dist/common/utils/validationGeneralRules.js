@@ -8,13 +8,13 @@ export const genRules = {
     age: zod
         .object({
         data: zod.number().optional(),
-        availibilty: zod.enum(Object.values(availabiltyEnum)).optional(),
+        availability: zod.enum(Object.values(availabiltyEnum)).optional(),
     })
         .optional(),
     gender: zod
         .object({
         data: zod.string().optional(),
-        availibilty: zod.enum(Object.values(availabiltyEnum)).optional(),
+        availability: zod.enum(Object.values(availabiltyEnum)).optional(),
     }).refine(obj => {
         const allowedGenders = ['male', ' female', 'other'];
         return obj.data === undefined || allowedGenders.includes(obj.data.toLowerCase());
@@ -23,12 +23,12 @@ export const genRules = {
     phone: zod
         .object({
         data: zod.string().optional(),
-        availibilty: zod.enum(Object.values(availabiltyEnum)).optional(),
+        availability: zod.enum(Object.values(availabiltyEnum)).optional(),
     })
         .optional(),
     friends: zod
         .object({
-        availibilty: zod.enum(Object.values(availabiltyEnum)).optional(),
+        availability: zod.enum(Object.values(availabiltyEnum)).optional(),
     })
         .optional(),
     otp: zod.string().length(5).refine(value => /^\d+$/.test(value), { message: 'OTP must contain only digits' }),
