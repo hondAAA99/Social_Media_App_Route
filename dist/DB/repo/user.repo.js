@@ -6,13 +6,5 @@ class userRepo extends repoBase {
         super(_model);
         this._model = _model;
     }
-    async userEmailExists({ email, confirmed, }) {
-        return await this._model.findOne({
-            filter: {
-                'email.data': email,
-                confirmed,
-            },
-        });
-    }
 }
 export default userRepo;

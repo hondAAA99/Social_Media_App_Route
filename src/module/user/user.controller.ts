@@ -15,6 +15,8 @@ import {
 } from './user.Schema.js'
 import { validationMiddleWare } from '../../common/middleware/validation.js'
 import chatRouter from '../chat/chat.controller.js'
+import { fileUpload } from '../../common/middleware/multer.js'
+import { multerFileEnum } from '../../common/enum/file.base.enum.js'
 
 export const userRouter: Router = Router({ mergeParams: true })
 
@@ -28,6 +30,8 @@ userRouter.patch(
 )
 userRouter.put('/update-email', authenticate, userServices.updateEmail)
 
+userRouter.get('/update-email-confirmation', authenticate, userServices.updateEmailconfirmation)
+
 userRouter.get('/get-profile', authenticate, userServices.getUserProfile)
 
 userRouter.get(
@@ -36,7 +40,13 @@ userRouter.get(
   authenticate,
   userServices.ShareProfile,
 )
-userRouter.put('/update-profile', validationMiddleWare(updateProfileSchema), authenticate, userServices.updateProfile)
+userRouter.put(
+  '/update-profile',
+  fileUpload({ fileType: multerFileEnum.image }).single('file'),
+  validationMiddleWare(updateProfileSchema),
+  authenticate,
+  userServices.updateProfile,
+)
 userRouter.delete('/delete-user', authenticate, userServices.deleteUser)
 
 userRouter.get(
@@ -51,12 +61,6 @@ userRouter.get(
   validationMiddleWare(lockProfileSchema),
   authenticate,
   userServices.lockProfile,
-)
-userRouter.get(
-  '/updateEmailConfirmation',
-  validationMiddleWare(updateEmailConfirmationSchema),
-  authenticate,
-  userServices.updateEmailConfirmation,
 )
 
 userRouter.post(
@@ -81,5 +85,5 @@ userRouter.post(
   '/blockUser/:userId',
   validationMiddleWare(blockUserSchema),
   authenticate,
-  userServices.blockUser,
+  userServices.blockHandling,
 )

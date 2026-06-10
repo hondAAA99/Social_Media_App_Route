@@ -39,15 +39,16 @@ abstract class repoBase<Tdocument> {
     options,
   }: {
     filter: QueryFilter<Tdocument>
-    projection?: ProjectionType<Tdocument> | null
+    projection?: any
     options?: QueryOptions<Tdocument>
   }): Promise<HydratedDocument<Tdocument> | null> {
     return await this._model
-      .findOne(filter, projection)
+      .findOne(filter)
       .skip(options?.skip!)
       .limit(options?.limit!)
       .sort(options?.sort)
       .populate(options?.populate as PopulateOptions)
+      .projection(projection)
   }
 
   async findById({
@@ -90,10 +91,10 @@ abstract class repoBase<Tdocument> {
     filter: QueryFilter<WithLevel1NestedPaths<Tdocument>>
     update?: UpdateQuery<Tdocument>
     options?: QueryOptions<Tdocument>
-  }): Promise<ModifyResult<Tdocument> | null> {
+  }): Promise<HydratedDocument<Tdocument> | null> {
     return await this._model.findOneAndUpdate(filter, update, {
       ...options,
-      new: true,
+      returnDocument: 'after',
     })
   }
 

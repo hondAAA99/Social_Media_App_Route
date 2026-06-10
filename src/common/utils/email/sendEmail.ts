@@ -17,26 +17,18 @@ export const sendEmail = async ({
   data: any
 }) => {
   let [blockedUser, attempts] = await Promise.all([
-    new redisServices()
-      .getKeyTtl(
-        new redisServices().cacheKey({
-          filter: to,
-          subject: cacheKeyEnum.block,
-        }),
-      )
-      .catch(err => {
-        ErrorInternalServerError('error in checking user activity*1')
+    new redisServices().getKeyTtl(
+      new redisServices().cacheKey({
+        filter: to,
+        subject: cacheKeyEnum.block,
       }),
-    new redisServices()
-      .getKey({
-        key: new redisServices().cacheKey({
-          filter: to,
-          subject: cacheKeyEnum.emailAttempts,
-        }),
-      })
-      .catch(err => {
-        ErrorInternalServerError('error in checking user activity*2')
+    ),
+    new redisServices().getKey({
+      key: new redisServices().cacheKey({
+        filter: to,
+        subject: cacheKeyEnum.emailAttempts,
       }),
+    }),
   ])
   if (blockedUser && blockedUser > 0)
     Errorforbidden(`you are being blocked please wait for ${blockedUser}`)
@@ -78,12 +70,12 @@ export const sendEmail = async ({
 
   eventEmitter.emit(mailEnum.sendMail, async () => {
     await Promise.all([
-      await new redisServices().setKey({
+      new redisServices().setKey({
         key: new redisServices().cacheKey({ filter: to, subject }),
-        value: subject == 'otp' ? Globalhash({ plainText: `${data}` }) : data,
+        value: Globalhash({ plainText: `${data}` }),
         ttl: 60 * 5,
       }),
-      await sendMail({
+      sendMail({
         to,
         subject,
         data,

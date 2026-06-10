@@ -1,10 +1,10 @@
-import { rateLimit } from "express-rate-limit";
-import { ErrorInteralServerError } from "../utils/globalresponse.js";
+import { rateLimit } from 'express-rate-limit';
+import { ErrorInternalServerError } from '../utils/globalresponse.js';
 const limiter = rateLimit({
     windowMs: 1000 * 60,
     limit: 4,
     handler: (req, res, next, options) => {
-        ErrorInteralServerError("too many requests", 429);
+        ErrorInternalServerError('too many requests', 429);
     },
     legacyHeaders: false,
 });

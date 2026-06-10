@@ -1,5 +1,5 @@
 import repoBase from './repo.base.js';
-import storyModel from '../models/story.model.js';
+import storyModel from '../models/stories/story.model.js';
 class storyRepo extends repoBase {
     _model;
     constructor(_model = storyModel) {

@@ -1,18 +1,18 @@
-import { ErrorInteralServerError } from '../utils/globalresponse.js';
+import { ErrorInternalServerError } from '../utils/globalresponse.js';
 import redis from 'redis';
-import { string } from 'zod';
 import { REDIS_CLIENT } from '../../config/config.services.js';
+export const _client = redis.createClient({
+    url: REDIS_CLIENT,
+});
 class redisService {
-    _client = redis.createClient({
-        url: REDIS_CLIENT,
-    });
     constructor() { }
     async connect() {
-        await this._client.connect();
-        console.log('connected to redis succeded');
+        await _client.connect().then(() => {
+            console.log('connected to redis');
+        });
     }
     async keyExists({ key }) {
-        return await this._client.exists(key);
+        return await _client.exists(key);
     }
     cacheKey({ filter, subject, }) {
         return `${subject}::${filter}`;
@@ -20,19 +20,16 @@ class redisService {
     async setKey({ key, value, ttl = 60, }) {
         try {
             value =
-                typeof value == string ? value : JSON.stringify(value, null, 2);
-            return await this._client.set(key, value, { EX: ttl });
+                typeof value == String ? value : JSON.stringify(value, null, 2);
+            return await _client.set(key, value, { EX: ttl });
         }
         catch (err) {
-            ErrorInteralServerError(err);
+            ErrorInternalServerError(err);
         }
     }
     async getKey({ key }) {
         try {
-            if (!this.keyExists({ key }) > 0) {
-                ErrorInteralServerError('key expiered');
-            }
-            const value = await this._client.get(key);
+            const value = await _client.get(key);
             try {
                 return JSON.parse(value);
             }
@@ -41,70 +38,70 @@ class redisService {
             }
         }
         catch (err) {
-            ErrorInteralServerError('failed to get the value from cache');
+            ErrorInternalServerError('failed to get the value from cache');
         }
     }
     async getAllKeys(pattern) {
         try {
-            const value = await this._client.keys(pattern);
+            const value = await _client.keys(pattern);
             return value;
         }
         catch (err) {
-            ErrorInteralServerError(err);
+            ErrorInternalServerError(err);
         }
     }
     async deleteKey({ key }) {
         try {
-            if (!this.keyExists({ key }) > 0) {
+            if (!await this.keyExists({ key }) > 0) {
                 return;
             }
-            const value = await this._client.del(await this.getAllKeys(key));
+            const value = await _client.del(await this.getAllKeys(key));
             return value;
         }
         catch (err) {
-            ErrorInteralServerError(err);
+            ErrorInternalServerError(err);
         }
     }
     async getKeyTtl(key) {
         try {
             if (!this.keyExists({ key }) > 0) {
-                ErrorInteralServerError('key expiered');
+                ErrorInternalServerError('key expiered');
             }
-            const value = await this._client.ttl(key);
+            const value = await _client.ttl(key);
             return value;
         }
         catch (err) {
-            ErrorInteralServerError(err);
+            ErrorInternalServerError(err);
         }
     }
     async incrKey(key) {
         try {
-            await this._client.incr(key);
+            await _client.incr(key);
         }
         catch (err) {
-            ErrorInteralServerError(err);
+            ErrorInternalServerError(err);
         }
     }
     async addSet({ filter, subject }, members) {
-        return await this._client.sAdd(this.cacheKey({
+        return await _client.sAdd(this.cacheKey({
             filter,
             subject,
         }), members);
     }
     async getSet({ filter, subject }) {
-        return await this._client.sMembers(this.cacheKey({
+        return await _client.sMembers(this.cacheKey({
             filter,
             subject,
         }));
     }
     async deleteSet({ filter, subject }, members) {
-        return await this._client.sRem(this.cacheKey({
+        return await _client.sRem(this.cacheKey({
             filter,
             subject,
         }), members);
     }
     async existsSet({ filter, subject }) {
-        return await this._client.sCard(this.cacheKey({
+        return await _client.sCard(this.cacheKey({
             filter,
             subject,
         }));

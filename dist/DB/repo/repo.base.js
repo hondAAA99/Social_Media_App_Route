@@ -16,16 +16,20 @@ class repoBase {
     }
     async findOne({ filter, projection, options, }) {
         return await this._model
-            .findOne(filter, projection)
+            .findOne(filter)
+            .skip(options?.skip)
+            .limit(options?.limit)
+            .sort(options?.sort)
+            .populate(options?.populate)
+            .projection(projection);
+    }
+    async findById({ id, projection, options, }) {
+        return await this._model
+            .findById(id, projection)
             .skip(options?.skip)
             .limit(options?.limit)
             .sort(options?.sort)
             .populate(options?.populate);
-    }
-    async findById({ id, projection, populate, }) {
-        return await this._model
-            .findById(id, projection)
-            .populate(populate);
     }
     async findByIdAndUpdate({ id, update, options, }) {
         return await this._model.findByIdAndUpdate(id, update, {
@@ -51,7 +55,7 @@ class repoBase {
     async deleteMany({ filter, options, paranoid = false, }) {
         return await this._model.deleteMany(filter);
     }
-    async paginate({ limit, page, populate, search = {}, sort, }) {
+    async paginate({ limit, page, search = {}, options, }) {
         limit = !limit || limit < 0 ? 1 : Number(limit);
         page = !page || page < 0 ? 2 : Number(page);
         let skip = (limit - 1) * page;
@@ -61,8 +65,7 @@ class repoBase {
                 options: {
                     skip,
                     limit,
-                    sort,
-                    populate,
+                    options,
                 },
             }),
             this._model.countDocuments({ ...(search ?? {}) }),

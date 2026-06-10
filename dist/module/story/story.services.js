@@ -3,9 +3,9 @@ import postRepo from '../../DB/repo/post.repo.js';
 import storyRepo from '../../DB/repo/story.repo.js';
 import userRepo from '../../DB/repo/user.repo.js';
 import { ErrorConflict, ErrorNotFound, ErrorUnAuthorizedRequest, SuccessResponse, } from '../../common/utils/globalresponse.js';
-import { friendsFlagEnum } from '../../common/enum/friendsFlag.enum.js';
+import { friendsFlagEnum } from '../../common/enum/user.base.enum.js';
 import redisService from '../../common/services/redis.services.js';
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js';
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js';
 class storyServices {
     _userModel = new userRepo();
     _s3services = new s3services();
@@ -14,13 +14,12 @@ class storyServices {
     _redisServices = new redisService();
     constructor() { }
     createStory = async (req, res, next) => {
-        const { user } = req;
-        const { file } = req;
+        const { user, files } = req;
         const { text, backGroundColor, excludeUsers, availiabilty } = req.body;
         let url;
-        if (file) {
-            url = await this._s3services.uploadFile({
-                file: file,
+        if (files) {
+            url = await this._s3services.uploadFiles({
+                files: files,
                 path: `users/${user?.email.data}/storiess`,
             });
         }

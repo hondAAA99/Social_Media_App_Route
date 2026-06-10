@@ -17,7 +17,7 @@ export const genderEnum = {
 export const friendsFlagEnum = {
   friend: "friend",
   requested: "requested",
-  declined : 'declined'
+  reject : 'reject'
 };
 export const friendsRequestEnum = {
   accept: "accept-request",

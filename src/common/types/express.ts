@@ -1,6 +1,6 @@
 import { HydratedDocument } from 'mongoose'
 import jsonwebtoken from 'jsonwebtoken'
-import { IUser } from '../../DB/models/users/user.model.js'
+import { IUser } from '../../DB/models/users/user.interface.js'
 
 declare global {
   namespace Express {

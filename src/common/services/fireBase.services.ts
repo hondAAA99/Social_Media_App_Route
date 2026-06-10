@@ -1,59 +1,59 @@
-import admin from "firebase-admin";
-import { resolve } from "path";
-import { readFileSync } from "fs";
+import admin from 'firebase-admin'
+import { resolve } from 'path'
+import { readFileSync } from 'fs'
+import { ErrorInternalServerError } from '../utils/globalresponse.js'
 
+let _client: admin.app.App
+if (admin.apps.length) {
+  _client = admin.app() // reuse existing app
+} else {
+  const path = JSON.parse(
+    readFileSync(
+      resolve(
+        'src/config/social-media-app-66b81-firebase-adminsdk-fbsvc-c1dbd34a46.json',
+      ),
+      'utf-8',
+    ),
+  )
+  _client = admin.initializeApp({
+    credential: admin.credential.cert(path),
+  })
+}
 class fireBaseServices {
-  private _client: admin.app.App = undefined!;
+  private = undefined!
   constructor() {}
-
-  firBaseConnection() {
-    if (admin.apps.length) {
-      this._client = admin.app(); // reuse existing app
-    } else {
-      const path = JSON.parse(
-        readFileSync(
-          resolve(
-            "src/config/social-media-app-66b81-firebase-adminsdk-fbsvc-c1dbd34a46.json",
-          ),
-          "utf-8",
-        ),
-      );
-      this._client = admin.initializeApp({
-        credential: admin.credential.cert(path),
-      });
-    }
-
-    console.log("connected to fireBase");
-  }
 
   async sendNotification({
     token,
     data,
   }: {
-    token: string;
-    data: { title: string; body: string };
+    token: string
+    data: { title: string; body: string }
   }) {
-    const message = { token, data };
-    return await this._client.messaging().send(message);
+    const message = { token, data }
+    return await _client
+      .messaging()
+      .send(message)
+      .catch(err => {
+        return ErrorInternalServerError('failed to send the notification')
+      })
   }
 
   async sendNotifications({
     tokens,
     data,
   }: {
-    tokens: string[];
+    tokens: string[]
     data: {
-      title: string;
-      body: string;
-    };
+      title: string
+      body: string
+    }
   }) {
-    await Promise.all(
-      tokens.map((token) => {
-        const message = { token, data };
-        this.sendNotification({ token, data });
-      }),
-    );
+    tokens.map(async token => {
+      const message = { token, data }
+      await this.sendNotification({ token, data })
+    })
   }
 }
 
-export default fireBaseServices;
+export default fireBaseServices

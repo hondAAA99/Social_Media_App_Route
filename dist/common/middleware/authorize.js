@@ -1,4 +1,4 @@
-import { ErrorUnAuthorizedRequest } from "../utils/globalresponse.js";
+import { ErrorUnAuthorizedRequest } from '../utils/globalresponse.js';
 export function authorize(arrOfRoles) {
     return (req, res, next) => {
         const { user } = req;
@@ -8,6 +8,6 @@ export function authorize(arrOfRoles) {
 }
 export function authorizeBase_GQL(arrOfRoles, role) {
     if (!arrOfRoles.includes(role)) {
-        return ErrorUnAuthorizedRequest("you are not authorized");
+        return ErrorUnAuthorizedRequest('you are not authorized');
     }
 }

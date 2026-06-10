@@ -10,6 +10,8 @@ const StorySchemaHelpersCalling = () => {
       this.setQuery({ ...rest })
     }
   })
+
+  storySchema.index({ createdAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 })
 }
 
 export default StorySchemaHelpersCalling

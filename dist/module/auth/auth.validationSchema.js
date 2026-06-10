@@ -1,32 +1,25 @@
 import zod from 'zod';
 import { genRules } from '../../common/utils/validationGeneralRules.js';
-import roleEnum from '../../common/enum/role.enum.js';
+import { confirmEmailFlagEnum, roleEnum, } from '../../common/enum/user.base.enum.js';
+import mailEnum from '../../common/enum/mail.enum.js';
 export const signUpSchema = {
     body: zod
         .object({
         userName: zod.string(),
         email: zod.email(),
-        password: zod.string(),
-        cpassword: zod.string(),
-        phone: genRules.phone,
+        passwordSchema: genRules.shape.passwordSchema,
+        phone: genRules.shape.phone.shape.data.optional(),
         role: zod.enum(Object.values(roleEnum)).optional(),
-        gender: genRules.gender,
-        DateOfBirth: zod.date(),
+        gender: genRules.shape.gender.shape.data.optional(),
+        BirthDate: zod.date().optional(),
     })
         .superRefine((data, ctx) => {
-        if (data.password != data.cpassword) {
-            ctx.addIssue({
-                code: zod.z.ZodIssueCode.custom,
-                message: 'passwords do not match',
-                path: ['cpassword'],
-            });
-        }
-        if (Number(new Date(data.DateOfBirth).getTime()) > Date.now() ||
-            Number(new Date(data.DateOfBirth).getTime()) - Date.now() < 378691200000) {
+        if (data.BirthDate &&
+            Number(new Date(data.BirthDate).getTime()) < Date.now()) {
             ctx.addIssue({
                 code: zod.z.ZodIssueCode.custom,
                 message: 'invalid Date',
-                path: ['DateOfBirth'],
+                path: ['BirthDate'],
             });
         }
     }),
@@ -41,34 +34,38 @@ export const signInSchema = {
 export const confirmSignUpSchema = {
     body: zod.object({
         email: zod.email(),
-        otp: genRules.otp,
+        otp: genRules.shape.otp,
+    }),
+    params: zod.object({
+        flag: zod.enum(Object.values(confirmEmailFlagEnum)),
     }),
 };
-export const forgetPassword = {
+export const sendOtp = {
     body: zod.object({
         email: zod.email(),
     }),
+    params: zod.object({
+        flag: zod.enum(Object.values(mailEnum)),
+    }),
 };
-export const resetPassowrd = {
+export const resetPassword = {
     body: zod.object({
         email: zod.email(),
-        newPassword: zod.string(),
-        otp: genRules.otp,
+        passwordSchema: genRules.shape.passwordSchema,
+        otp: genRules.shape.otp,
     }),
 };
 export const resendOtp = {
     body: zod.object({
         email: zod.email(),
     }),
-};
-export const EnableTwoStepVerfiction = {
-    body: zod.object({
-        email: zod.email(),
+    params: zod.object({
+        flag: zod.enum(Object.values(mailEnum)),
     }),
 };
 export const confirmLoginSchema = {
     body: zod.object({
         email: zod.email(),
-        otp: genRules.otp,
+        otp: genRules.shape.otp,
     }),
 };

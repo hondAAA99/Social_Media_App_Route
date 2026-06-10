@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose'
 import availabiltyEnum from '../../../common/enum/availablity.enum.js'
 import { IPost, IReactCount, IReactedUser, IReacts } from './post.interface.js'
-import hideLikeCount from '../../../common/enum/hideLikeCounts.enum.js'
+import { LikeCountAvailability as hideLikeCount } from '../../../common/enum/post_comment.base.enum.js'
 import postsSchemaHelpersCalling from './schema.helpers.js'
 
 export const reactCountSchema = new Schema<IReactCount>({

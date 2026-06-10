@@ -8,7 +8,7 @@ export function postAvailability(req) {
             availablity: availabiltyEnum.public,
         },
         {
-            availablity: availabiltyEnum.freinds,
+            availablity: availabiltyEnum.friends,
             createdBy: { $in: req.user?.friends.data ?? [] },
         },
         {
@@ -25,7 +25,7 @@ export function userDataAvailability(req) {
             availablity: availabiltyEnum.public,
         },
         {
-            availablity: availabiltyEnum.freinds,
+            availablity: availabiltyEnum.friends,
             createdBy: { $in: req.user?.friends.data ?? [] },
         },
     ];

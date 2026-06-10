@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose'
-import hideLikeCount from '../../../common/enum/hideLikeCounts.enum.js'
+import { LikeCountAvailability as hideLikeCount } from '../../../common/enum/post_comment.base.enum.js'
 import { IReactCount, IReactedUser, IReacts } from './post.interface.js'
 import { postSchema } from './posts.schema.js'
 

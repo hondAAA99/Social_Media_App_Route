@@ -1,5 +1,5 @@
 import repoBase from './repo.base.js';
-import chatModel from '../models/chat.model.js';
+import chatModel from '../models/chat/chat.model.js';
 class chatRepo extends repoBase {
     _model;
     constructor(_model = chatModel) {

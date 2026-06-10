@@ -9,7 +9,10 @@ import mailEnum from '../../common/enum/mail.enum.js'
 import { sendEmail } from '../../common/utils/email/sendEmail.js'
 import { generateOtp } from '../../common/utils/email/nodeMailer.js'
 import userRepo from '../../DB/repo/user.repo.js'
-import { ErrorConflict } from '../../common/utils/globalresponse.js'
+import {
+  ErrorConflict,
+  ErrorNotFound,
+} from '../../common/utils/globalresponse.js'
 import redisService from '../../common/services/redis.services.js'
 class servicesHelpers {
   private readonly _userModel = new userRepo()
@@ -43,14 +46,18 @@ class servicesHelpers {
 
   checkUserExistsAndConfirmed = async (
     email: string,
-  ): Promise<HydratedDocument<IUser> | null> => {
-    const emailExists = await this._userModel.findOne({
-      filter: { 'email.data': email },
+    confirmed: boolean | null,
+  ) => {
+    const emailExists: any = await this._userModel.findOne({
+      filter: confirmed == true
+        ? { 'email.data': email, confirmed: true }
+        : { 'email.data': email },
     })
-    if (!emailExists || emailExists?.confirmed == false) {
-      ErrorConflict("email doesn't exists")
+    if (confirmed == null) {
+      if (emailExists) return ErrorConflict('email already exists')
+    } else if (confirmed == false || confirmed == true) {
+      if (!emailExists) return ErrorConflict('email is not exists exists')
     }
-
     return emailExists
   }
 

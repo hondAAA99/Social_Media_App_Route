@@ -8,7 +8,6 @@ const cacheKeyEnum = {
   confirmSingUp: 'confirm::sign-up::otp',
   confirmLoginIn: 'confirm::log-in::otp',
   forgetPassword: 'forget::otp',
-  reSendOtp: 're-send::otp',
   twoStepVerification: 'enable-two-step-verification',
 }
 

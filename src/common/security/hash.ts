@@ -1,16 +1,17 @@
-import { compareSync, hashSync } from "bcrypt";
-import { HASH_SALT } from "../../config/config.services.js";
+import { compareSync, hashSync } from 'bcrypt'
+import { HASH_SALT } from '../../config/config.services.js'
 
 export function Globalhash({ plainText }: { plainText: string }) {
-  return hashSync(plainText, HASH_SALT);
+  return hashSync(plainText, HASH_SALT)
 }
 
 export function GlobalCompare({
   plainText,
   hashText,
 }: {
-  plainText: string;
-  hashText: string;
+  plainText: string
+  hashText: string
 }) {
-  return compareSync(plainText, hashText);
+
+  return compareSync(plainText, hashText)
 }

@@ -1,5 +1,4 @@
 import { Request } from "express";
-import { IPost } from "../../DB/models/post.model.js";
 import availabiltyEnum from "../enum/availablity.enum.js";
 
 export function postAvailability(req: Request) {
@@ -11,7 +10,7 @@ export function postAvailability(req: Request) {
       availablity: availabiltyEnum.public,
     },
     {
-      availablity: availabiltyEnum.freinds,
+      availablity: availabiltyEnum.friends,
       createdBy: { $in: req.user?.friends.data ?? [] },
     },
     {
@@ -28,7 +27,7 @@ export function userDataAvailability(req: Request) {
       availablity: availabiltyEnum.public,
     },
     {
-      availablity: availabiltyEnum.freinds,
+      availablity: availabiltyEnum.friends,
       createdBy: { $in: req.user?.friends.data ?? [] },
     },
   ];

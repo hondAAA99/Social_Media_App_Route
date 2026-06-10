@@ -10,9 +10,9 @@ import {
   SuccessResponse,
 } from '../../common/utils/globalresponse.js'
 import { HydratedDocument, ObjectId } from 'mongoose'
-import { IUser } from '../../DB/models/users/user.model.js'
-import { friendsFlagEnum } from '../../common/enum/friendsFlag.enum.js'
-import { IStory } from '../../DB/models/story.model.js'
+import { IUser } from '../../DB/models/users/user.interface.js'
+import { friendsFlagEnum } from '../../common/enum/user.base.enum.js'
+import { IStory } from '../../DB/models/stories/story.model.js'
 import redisService from '../../common/services/redis.services.js'
 import cacheKeyEnum from '../../common/enum/redis.base.enum.js'
 

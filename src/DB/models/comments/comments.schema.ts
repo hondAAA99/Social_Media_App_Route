@@ -1,8 +1,8 @@
 import mongoose, { Schema } from 'mongoose'
-import onModelEnum from '../../../common/enum/onModel.enum.js'
 import { IComment } from './comment.interface.js'
 import { reactsSchema } from '../posts/posts.schema.js'
 import CommentSchemaHelpersCalling from './schema.helpers.js'
+import { onModelEnum } from '../../../common/enum/post_comment.base.enum.js'
 
 export const commentSchema = new Schema<IComment>({
   tags: [{ type: Schema.Types.ObjectId }],
@@ -24,7 +24,7 @@ export const commentSchema = new Schema<IComment>({
     },
   },
   refId: { type: Schema.Types.ObjectId, refPath: 'onModel', required: true },
-  onModel: { type: String, enum: onModelEnum, required: true },
+  onModel: { type: String, enum: Object.values(onModelEnum), required: true },
   folderId: { type: String },
   reacts: reactsSchema,
   hideComment: {

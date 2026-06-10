@@ -5,8 +5,8 @@ export const createComment = {
   body: z
     .strictObject({
       content: z.string().optional(),
-      attachments: z.array(genRules.file).optional(),
-      tags: z.array(genRules.id).optional(),
+      attachments: z.array(genRules.shape.file).optional(),
+      tags: z.array(genRules.shape.id).optional(),
       onModel: z.enum(onModelEnum),
     })
     .superRefine((data, ctx) => {
@@ -47,9 +47,9 @@ export const updateComment = {
   body: z
     .strictObject({
       content: z.string().optional,
-      attachments: z.array(genRules.file).optional(),
-      removedAttachments: z.array(genRules.file).optional(),
-      tags: z.array(genRules.id).optional,
+      attachments: z.array(genRules.shape.file).optional(),
+      removedAttachments: z.array(genRules.shape.file).optional(),
+      tags: z.array(genRules.shape.id).optional,
     })
     .superRefine((data, ctx) => {
       if (!data.content && !data?.attachments?.length) {
@@ -87,51 +87,51 @@ export const updateComment = {
 
 export const deleteComment = {
   headers: z.object({
-    authorization: genRules.authorization,
+    authorization: genRules.shape.authorization,
   }),
 
   params: z.object({
-    commentId: genRules.id,
+    commentId: genRules.shape.id,
   }),
 }
 
 export const getComments = {
   headers: z.object({
-    authorization: genRules.authorization,
+    authorization: genRules.shape.authorization,
   }),
 
   params: z.object({
-    postId: genRules.id,
+    postId: genRules.shape.id,
   }),
 
   query: z.object({
-    limit: genRules.searchLimit,
-    page: genRules.pageLimit,
+    limit: genRules.shape.searchLimit,
+    page: genRules.shape.pageLimit,
   }),
 }
 
 export const getCommentByIdAndPaginateReplies = {
   headers: z.object({
-    authorization: genRules.authorization,
+    authorization: genRules.shape.authorization,
   }),
 
   params: z.object({
-    commentId: genRules.id,
+    commentId: genRules.shape.id,
   }),
 
   query: z.object({
-    limit: genRules.searchLimit,
-    page: genRules.searchLimit,
+    limit: genRules.shape.searchLimit,
+    page: genRules.shape.searchLimit,
   }),
 }
 
 export const reactComment = {
   headers: z.object({
-    authorization: genRules.authorization,
+    authorization: genRules.shape.authorization,
   }),
 
   params: z.object({
-    commentId: genRules.id,
+    commentId: genRules.shape.id,
   }),
 
   query: z.object({
@@ -141,10 +141,10 @@ export const reactComment = {
 
 export const hideComment = {
   headers: z.object({
-    authorization: genRules.authorization,
+    authorization: genRules.shape.authorization,
   }),
 
   params: z.object({
-    commentId: genRules.id,
+    commentId: genRules.shape.id,
   }),
 }

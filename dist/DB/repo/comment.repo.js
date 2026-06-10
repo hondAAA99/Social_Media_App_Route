@@ -1,5 +1,5 @@
-import commentModel from "../models/comment.model.js";
-import repoBase from "./repo.base.js";
+import commentModel from '../models/comments/comment.model.js';
+import repoBase from './repo.base.js';
 class commentRepo extends repoBase {
     _commentModel;
     constructor(_commentModel = commentModel) {

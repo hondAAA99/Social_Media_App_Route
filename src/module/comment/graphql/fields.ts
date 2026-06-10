@@ -3,7 +3,7 @@ import { authenticateGQL } from '../../../common/middleware/authenticate.js'
 import postRepo from '../../../DB/repo/post.repo.js'
 import { GQlgetCommentsArgs } from './args.js'
 import { GQLCommentType } from './types.js'
-import { IUser } from '../../../DB/models/users/user.model.js'
+import { IUser } from '../../../DB/models/users/user.interface.js'
 import { postAvailbilty } from '../../../common/utils/postUtils.js'
 
 class GLCommentFields {

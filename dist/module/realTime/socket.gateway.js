@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { authenticateSocket } from '../../common/middleware/authenticate.js';
-import { ErrorInteralServerError } from '../../common/utils/globalresponse.js';
-import cacheKeyEnum from '../../common/enum/cacheKey.enum.js';
+import { ErrorInternalServerError } from '../../common/utils/globalresponse.js';
+import cacheKeyEnum from '../../common/enum/redis.base.enum.js';
 import redisServices from '../../common/services/redis.services.js';
 import chatGateWay from '../chat/realtime/chat.gateWay.js';
 class socketGateWay {
@@ -20,7 +20,7 @@ class socketGateWay {
             next();
         }
         catch (error) {
-            ErrorInteralServerError('error in jwt token');
+            ErrorInternalServerError('error in jwt token');
             next(error);
         }
     };

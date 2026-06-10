@@ -1,4 +1,4 @@
-import { Types } from 'mongoose'
+import { Schema, Types } from 'mongoose'
 import zod from 'zod'
 import AvailabilityEnum from '../enum/availablity.enum.js'
 import { reactsEnum } from '../enum/post_comment.base.enum.js'
@@ -60,12 +60,10 @@ export const genRules = zod.object({
     .refine(value => /^\d+$/.test(value), {
       message: 'OTP must contain only digits',
     }),
-  id: zod.string().refine(
-    value => {
-      return Types.ObjectId.isValid(value)
-    },
-    { message: 'inValid id' },
-  ),
+  id: zod.string().transform(value => {
+    return new Schema.Types.ObjectId(value)
+  }),
+
   file: zod
     .object({
       feildname: zod.string(),
@@ -121,7 +119,7 @@ export const genRules = zod.object({
     }),
   password: zod.string(),
 
-  passwordScheam: zod
+  passwordSchema: zod
     .object({
       password: zod.string(),
       cpassword: zod.string(),

@@ -1,7 +1,7 @@
 import { Schema } from 'mongoose';
-import onModelEnum from '../../../common/enum/onModel.enum.js';
 import { reactsSchema } from '../posts/posts.schema.js';
 import CommentSchemaHelpersCalling from './schema.helpers.js';
+import { onModelEnum } from '../../../common/enum/post_comment.base.enum.js';
 export const commentSchema = new Schema({
     tags: [{ type: Schema.Types.ObjectId }],
     attachments: {
@@ -22,12 +22,14 @@ export const commentSchema = new Schema({
         },
     },
     refId: { type: Schema.Types.ObjectId, refPath: 'onModel', required: true },
-    onModel: { type: String, enum: onModelEnum, required: true },
+    onModel: { type: String, enum: Object.values(onModelEnum), required: true },
     folderId: { type: String },
     reacts: reactsSchema,
     hideComment: {
         type: Boolean,
         default: false,
     },
+    deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'users' },
 });
 CommentSchemaHelpersCalling();

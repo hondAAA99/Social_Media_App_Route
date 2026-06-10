@@ -9,15 +9,18 @@ import { TokenVerify } from '../security/jsonWebTokens.js'
 import {
   ErrorConflict,
   Errorforbidden,
+  ErrorUnAuthorizedRequest,
 } from './globalresponse.js'
 import jsonwebtoken from 'jsonwebtoken'
 import userRepo from '../../DB/repo/user.repo.js'
 import { IUser } from '../../DB/models/users/user.interface.js'
+import redisService from '../services/redis.services.js'
+import cacheKeyEnum from '../enum/redis.base.enum.js'
 
 async function authenticateUtilts(authorization: string) {
-  let [prefix, token] = authorization.split(' ') as [string, string]
+  let [prefix, token]: Array<string> = authorization.split(' ')
   if (!prefix) {
-    Errorforbidden('invalid token')
+    Errorforbidden('invalid token*1')
   }
   const secret: string = (function () {
     if (prefix == TOKEN_USER_PREFIX) {
@@ -25,33 +28,33 @@ async function authenticateUtilts(authorization: string) {
     } else if (prefix == TOKEN_ADMIN_PREFIX) {
       return SECRET_ADMIN_ACCESS_TOKEN
     }
-    return Errorforbidden('invalid token')
+    return Errorforbidden('invalid token*2')
   })()
 
   const verify: jsonwebtoken.JwtPayload = TokenVerify({
-    token,
+    token: token!,
     secret,
   }) as jsonwebtoken.JwtPayload
   const user: HydratedDocument<IUser> | null = await new userRepo().findById({
     id: verify.userId,
   })
   if (!user) ErrorConflict('user does not exists')
-  // if (
-  //   user!.creadnatials &&
-  //   user!.creadnatials.getTime() < (verify.iat as number) * 1000
-  // ) {
-  //   console.log({ 1: user!.creadnatials, 2: user!.creadnatials.getTime() });
-  //   ErrorUnAuthorizedRequest("token revoked please login again");
-  // }
+  if (
+    user!.credentials &&
+    user!.credentials.getTime() < (verify.iat as number) * 1000
+  ) {
+    console.log({ 1: user!.credentials, 2: user!.credentials.getTime() })
+    ErrorUnAuthorizedRequest('token revoked please login again')
+  }
 
-  // const CachedRevokeToken = await new redisServices().getKey({
-  //   key: new redisServices().cacheKey({
-  //     filter: token,
-  //     subject: cacheKeyEnum.revokeToken,
-  //   }),
-  // });
-  // if (CachedRevokeToken)
-  //   ErrorUnAuthorizedRequest("token revoked please login again");
+  const CachedRevokeToken = await new redisService().getKey({
+    key: new redisService().cacheKey({
+      filter: token!,
+      subject: cacheKeyEnum.revokeToken,
+    }),
+  })
+  if (CachedRevokeToken)
+    ErrorUnAuthorizedRequest('token revoked please login again')
 
   return { user, token, decoded: verify }
 }

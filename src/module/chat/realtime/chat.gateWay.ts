@@ -6,7 +6,9 @@ class chatGateWay {
   constructor() {}
 
   registerEvent = (socket: Socket, io: Server) => {
-    this._chatEvent.events(socket, io)
+    this._chatEvent.sendMessageToFriend(socket, io)
+    this._chatEvent.joinRoom(socket, io)
+    this._chatEvent.sendMessageToGroup(socket, io)
   }
 }
 

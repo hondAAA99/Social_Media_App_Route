@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { HydratedDocument } from 'mongoose'
-import { IUser } from '../../DB/models/users/user.model.js'
+import { IUser } from '../../DB/models/users/user.interface.js'
 import authenticateUtilts from '../utils/authentication.utils.js'
 
 export async function authenticate(
@@ -28,9 +28,7 @@ export async function authenticateGQL(context: any): Promise<any> {
 }
 
 export async function authenticateSocket(socket: any): Promise<any> {
-  const { authorization } =
-    socket.handshake.auth.authorization ||
-    socket.handshake.headers.authorization
+  const { authorization } = socket.handshake.auth.authorization
   const { user, token, decoded } = await authenticateUtilts(authorization)
   return { user, token, decoded }
 }

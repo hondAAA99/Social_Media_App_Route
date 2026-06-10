@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import multer from 'multer'
-import multerFileEnum from '../enum/file.base.enum.js'
-import multerStorageEnum from '../enum/multerStorageType.js'
+import { multerFileEnum, multerStorageEnum } from '../enum/file.base.enum.js'
 import { tmpdir } from 'node:os'
 
 export function fileUpload({

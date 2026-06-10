@@ -1,6 +1,6 @@
-const availabiltyEnum = {
+const AvailabilityEnum = {
     onlyMe: 'only-me',
-    freinds: 'friends',
+    friends: 'friends',
     public: 'public',
 };
-export default availabiltyEnum;
+export default AvailabilityEnum;

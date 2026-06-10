@@ -1,47 +1,46 @@
 import { Schema } from 'mongoose'
 
 export interface IEmailData {
-  data: string
+  data?: string
+  availability?: string
+}
+export interface IProfilePicture {
+  data?: string
   availability?: string
 }
 
 export interface IPhoneData {
-  data: string
+  data?: string
   availability?: string
 }
 
 export interface IAgeData {
-  data: Date
+  data?: Date
   availability?: string
 }
 
 export interface IGenderData {
-  data: string
+  data?: string
   availability?: string
 }
 
 export interface IFriendItem {
-  flag: string
+  flag?: string
   friendId: Schema.Types.ObjectId
 }
 
 export interface IFriendsData {
   availability?: string
-  data: IFriendItem[]
+  data?: IFriendItem[]
 }
 
 export interface IUser {
+  profileLock?: boolean
   id?: Schema.Types.ObjectId
   firstName: string
   lastName: string
   userName: string
-  email: IEmailData
   profilePicture?: String
-  friends: IFriendsData
-  phone?: IPhoneData
-  age?: IAgeData
-  gender?: IGenderData
-  profileLock?: boolean
   blockedUsers: Schema.Types.ObjectId[]
   role?: string
   password: string
@@ -53,4 +52,9 @@ export interface IUser {
   deletedBy?: Schema.Types.ObjectId
   twoStepVerification: boolean
   credentials?: Date
+  email: IEmailData
+  friends: IFriendsData
+  phone?: IPhoneData
+  age?: IAgeData
+  gender?: IGenderData
 }

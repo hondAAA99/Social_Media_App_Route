@@ -10,7 +10,7 @@ export const signUpSchema = {
     .object({
       userName: zod.string(),
       email: zod.email(),
-      passwordSchema: genRules.shape.passwordScheam,
+      passwordSchema: genRules.shape.passwordSchema,
       phone: genRules.shape.phone.shape.data.optional(),
       role: zod.enum(Object.values(roleEnum)).optional(),
       gender: genRules.shape.gender.shape.data.optional(),
@@ -67,8 +67,7 @@ export const sendOtp = {
 export const resetPassword = {
   body: zod.object({
     email: zod.email(),
-    password: genRules.shape.password,
-    cPassword: zod.string(),
+    passwordSchema: genRules.shape.passwordSchema,
     otp: genRules.shape.otp,
   }),
 }

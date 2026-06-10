@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import commentRepo from '../../DB/repo/comment.repo.js'
 import {
   ErrorConflict,
-  ErrorInteralServerError,
+  ErrorInternalServerError,
   ErrorNotFound,
   ErrorUnAuthorizedRequest,
   SuccessResponse,
@@ -22,7 +22,11 @@ import {
   allowCommentsEnum,
   onModelEnum,
 } from '../../common/enum/post_comment.base.enum.js'
-import {  createCommentDTOBody, createCommentDTOHeader, createCommentDTOParams } from './comment.dto.js'
+import {
+  createCommentDTOBody,
+  createCommentDTOHeader,
+  createCommentDTOParams,
+} from './comment.dto.js'
 
 import { roleEnum } from '../../common/enum/user.base.enum.js'
 
@@ -123,7 +127,7 @@ class commentServices {
         Keys: urls,
       })
 
-      return ErrorInteralServerError('failed to add comment to the post')
+      return ErrorInternalServerError('failed to add comment to the post')
     }
 
     await this._fireBase.sendNotifications({

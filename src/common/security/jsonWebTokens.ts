@@ -7,7 +7,7 @@ import {
   SECRET_USER_REFRESH_TOKEN,
 } from '../../config/config.services.js'
 import { Schema } from 'mongoose'
-import roleEnum from '../enum/user.base.enum.js'
+import { roleEnum } from '../enum/user.base.enum.js'
 
 export function generateAccessToken({
   userId,

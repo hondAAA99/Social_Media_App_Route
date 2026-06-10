@@ -1,52 +1,41 @@
 import zod from 'zod';
 import { genRules } from '../../common/utils/validationGeneralRules.js';
 export const updatePasswordSchema = {
-    body: zod
-        .object({
-        email: zod.email(),
+    body: zod.object({
+        email: genRules.shape.email,
         oldPassword: zod.string(),
-        newPassword: zod.string(),
-        newCPassword: zod.string(),
-    })
-        .superRefine((value, ctx) => {
-        if (value.newPassword != value.newCPassword) {
-            ctx.addIssue({
-                code: zod.z.ZodIssueCode.custom,
-                message: 'passwords do not match',
-                path: ['cpassword'],
-            });
-        }
+        passwordSchema: genRules.shape.passwordSchema,
     }),
 };
 export const lockProfileSchema = {
     query: zod.object({
-        flag: zod.enum(['lock', 'unlock']),
+        flag: genRules.shape.lockProfileFlag,
     }),
 };
 export const updateEmailSchema = {
     body: zod.object({
-        email: genRules.email,
+        email: genRules.shape.email,
     }),
 };
 export const shareProfileSchema = {
     params: zod.object({
-        userId: genRules.id,
+        userId: genRules.shape.id,
     }),
 };
 export const updateProfileSchema = {
     body: zod.object({
-        firstName: genRules.firstName,
-        lastName: genRules.lastName,
-        age: genRules.age,
-        gender: genRules.gender,
-        phone: genRules.phone,
-        friends: genRules.friends,
+        firstName: genRules.shape.firstName,
+        lastName: genRules.shape.lastName,
+        age: genRules.shape.age,
+        gender: genRules.shape.gender,
+        phone: genRules.shape.phone,
+        file: genRules.shape.file,
     }),
 };
 export const updateEmailConfirmationSchema = {
     body: zod.object({
-        newEmail: genRules.email,
-        otp: genRules.otp,
+        newEmail: genRules.shape.email,
+        otp: genRules.shape.otp,
     }),
 };
 export const logoutSchema = {
@@ -56,22 +45,23 @@ export const logoutSchema = {
 };
 export const sendFriendRequestSchema = {
     params: zod.object({
-        requestedUserId: genRules.id,
+        requestedUserId: genRules.shape.id,
     }),
 };
 export const handleFriendRequestSchema = {
     params: zod.object({
-        requestingUserId: genRules.id,
-        flag: zod.enum(['accept', 'reject']),
+        requestingUserId: genRules.shape.id,
+        flag: genRules.shape.friendRequestFlag,
     }),
 };
 export const removeFriendSchema = {
     params: zod.object({
-        friendId: genRules.id,
+        removedFriendId: genRules.shape.id,
     }),
 };
 export const blockUserSchema = {
-    params: zod.object({
-        blockedUserId: genRules.id,
+    query: zod.object({
+        blockedUserId: genRules.shape.id,
+        flag: genRules.shape.blockUserFlag,
     }),
 };

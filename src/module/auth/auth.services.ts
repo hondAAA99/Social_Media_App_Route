@@ -40,7 +40,9 @@ import { generateOtp } from '../../common/utils/email/nodeMailer.js'
 import {
   confirmEmailFlagEnum,
   providerEnum,
+  roleEnum,
 } from '../../common/enum/user.base.enum.js'
+import confirmMailFlagEnum from '../../common/enum/confirmMailFlag.enum.js'
 class auth {
   private readonly _userModel = new userRepo()
   private readonly _fireBase = new fireBaseServices()
@@ -61,11 +63,12 @@ class auth {
       gender,
       BirthDate,
     }: signUpDTO = req.body
-    await servicesHelpers.checkUserExistsAndConfirmed(email)
 
+    const user = await servicesHelpers.checkUserExistsAndConfirmed(email, null)
     await this._userModel
       .create({
         userName,
+        provider: providerEnum.system,
         email: { data: email },
         password: Globalhash({ plainText: passwordSchema.password }),
         age: BirthDate ? { data: BirthDate } : undefined,
@@ -91,22 +94,32 @@ class auth {
     next: NextFunction,
   ): Promise<void> => {
     const { email, otp }: confirmEmailDTOBody = req.body
-    const { flag }: confirmEmailDTOParams = req.params.flag
-    await servicesHelpers.checkUserExistsAndConfirmed(email)
+    const { flag } = req.query
+    await servicesHelpers.checkUserExistsAndConfirmed(email, false)
+
+    const CacheKey =
+      flag == confirmMailFlagEnum.confirmSingUp
+        ? cacheKeyEnum.confirmSingUp
+        : cacheKeyEnum.twoStepVerification
 
     const CachedOtp = await servicesHelpers
-      .getUserCache(email, cacheKeyEnum.confirmLoginIn)
+      .getUserCache(email, CacheKey)
       .then(value => {
-        if (!GlobalCompare({ plainText: otp, hashText: value as string }))
+        if (
+          !GlobalCompare({
+            plainText: otp,
+            hashText: value as string,
+          })
+        )
           return ErrorUnAuthorizedRequest('wrong otp code')
       })
 
     await Promise.all([
-      servicesHelpers.deleteUserCache(email, cacheKeyEnum.confirmSingUp),
+      servicesHelpers.deleteUserCache(email, CacheKey),
       this._userModel.findOneAndUpdate({
         filter: { 'email.data': email },
         update:
-          flag == confirmEmailFlagEnum.confirmMail
+          CacheKey == cacheKeyEnum.confirmSingUp
             ? { confirmed: true }
             : { twoStepVerification: true },
       }),
@@ -126,52 +139,53 @@ class auth {
   ): Promise<void> => {
     const { email, password, fcm }: lobInDTO = req.body
 
-    const user: HydratedDocument<IUser> = (await servicesHelpers
-      .checkUserExistsAndConfirmed(email)
-      .then(value => {
-        if (
-          !GlobalCompare({ plainText: password, hashText: value!.password })
-        ) {
-          return ErrorUnAuthorizedRequest('wrong password')
-        }
-      })) as HydratedDocument<IUser>
+    const user: HydratedDocument<IUser> =
+      await servicesHelpers.checkUserExistsAndConfirmed(email, true)
 
-    let recordedFcms = await this._redisServices
-      .getSet({
-        filter: email,
-        subject: cacheKeyEnum.fcm,
+    if (
+      !GlobalCompare({
+        plainText: password,
+        hashText: user!.password!,
       })
-      .then(async value => {
-        if (!value) {
-          await this._redisServices.addSet(
-            {
-              filter: email,
-              subject: cacheKeyEnum.fcm,
-            },
-            fcm,
-          )
-        } else if (!value.includes(fcm)) {
-          value.push(fcm)
-          await this._redisServices.addSet(
-            {
-              filter: email,
-              subject: cacheKeyEnum.fcm,
-            },
-            value,
-          )
-        }
-        return value
-      })
-      .then(async value => {
-        await this._fireBase.sendNotifications({
-          tokens: value,
-          data: {
-            title: 'login alert',
-            body: `new login at ${new Date(Date.now())}`,
-          },
-        })
-        return value
-      })
+    ) {
+      return ErrorUnAuthorizedRequest('wrong password')
+    }
+
+    let recordedFcms: string[] = (await this._redisServices.getSet({
+      filter: email,
+      subject: cacheKeyEnum.fcm,
+    })) as string[]
+
+    if (recordedFcms) {
+      await this._redisServices.addSet(
+        {
+          filter: email,
+          subject: cacheKeyEnum.fcm,
+        },
+        fcm,
+      )
+    } else if (!(recordedFcms as any).includes(fcm)) {
+      ;(recordedFcms as any).push(fcm)
+      await this._redisServices.addSet(
+        {
+          filter: email,
+          subject: cacheKeyEnum.fcm,
+        },
+        recordedFcms,
+      )
+    }
+
+    //     // await this._fireBase.sendNotifications({
+    //     //   tokens: value,
+    //     //   data: {
+    //     //     title: 'login alert',
+    //     //     body: `new login at ${new Date(Date.now())}`,
+    //     //   },
+    //     // })
+    //   } catch (err) {
+    //     return ErrorInternalServerError('failed to send notification')
+    //   }
+
 
     if (user?.twoStepVerification == true) {
       const emailData = generateOtp()
@@ -181,11 +195,11 @@ class auth {
         res,
         data: 'please confirm your login',
       })
-    } else
-      SuccessResponse({
-        res,
-        data: servicesHelpers.generateTokens(user! as HydratedDocument<IUser>),
-      })
+    }
+    SuccessResponse({
+      res,
+      data: servicesHelpers.generateTokens(user! as any),
+    })
   }
 
   confirmLogin = async (
@@ -194,7 +208,7 @@ class auth {
     next: NextFunction,
   ): Promise<void> => {
     const { email, otp }: confirmEmailDTOBody = req.body
-    const user = await servicesHelpers.checkUserExistsAndConfirmed(email)
+    const user = await servicesHelpers.checkUserExistsAndConfirmed(email, true)
 
     await servicesHelpers
       .getUserCache(email, cacheKeyEnum.confirmLoginIn)
@@ -231,8 +245,10 @@ class auth {
     if (!payload) ErrorInternalServerError('invalid token id')
     const { name, email, email_verified, picture }: any = payload
 
-    let emailExists: HydratedDocument<IUser> | null =
-      await this._userModel.findOne({ filter: { 'email.data': email } })
+    let emailExists: any = servicesHelpers.checkUserExistsAndConfirmed(
+      email,
+      true,
+    )
     if (!emailExists) {
       emailExists = await this._userModel.create({
         userName: name,
@@ -256,28 +272,32 @@ class auth {
     next: NextFunction,
   ): Promise<void> => {
     const { email }: resendOtpDTOBody = req.body
-    const { flag }: resendOtpDTOParams = req.params.flag
+    const { flag } = req.query as { flag: string }
 
-    await servicesHelpers.checkUserExistsAndConfirmed(email)
+    await servicesHelpers.checkUserExistsAndConfirmed(email, false)
     const emailData = generateOtp()
-    servicesHelpers.fireMailEvent(email, flag, emailData)
+
+    const CacheKey = () => {
+      switch (flag) {
+        case confirmMailFlagEnum.confirmSingUp:
+          return cacheKeyEnum.confirmSingUp
+        case confirmMailFlagEnum.confirmLoginIn:
+          return cacheKeyEnum.confirmLoginIn
+        case confirmMailFlagEnum.forgetPassword:
+          return cacheKeyEnum.forgetPassword
+        case confirmMailFlagEnum.twoStepVerification:
+          return cacheKeyEnum.twoStepVerification
+        default:
+      }
+    }
+    servicesHelpers.fireMailEvent(email, CacheKey()!, emailData)
     SuccessResponse({ res, data: 'otp send please confirm your mail' })
   }
 
-  sendOtp = async (req: Request, res: Response, next: NextFunction) => {
-    const { email }: sendOtpDTO = req.body
-    const { flag }: resendOtpDTOParams = req.params.flag
+  resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+    const { email, passwordSchema, otp }: resetPasswordDTO = req.body
     const userEmailExists: HydratedDocument<IUser> | null =
-      await servicesHelpers.checkUserExistsAndConfirmed(email)
-    const emailData = generateOtp()
-    servicesHelpers.fireMailEvent(email, mailEnum.forgetPassword, emailData)
-    SuccessResponse({ res, data: 'please confirm your email' })
-  }
-
-  resetPassowrd = async (req: Request, res: Response, next: NextFunction) => {
-    const { email, password, otp }: resetPasswordDTO = req.body
-    const userEmailExists: HydratedDocument<IUser> | null =
-      await servicesHelpers.checkUserExistsAndConfirmed(email)
+      await servicesHelpers.checkUserExistsAndConfirmed(email, true)
     const CachedOtp = (await servicesHelpers.getUserCache(
       email,
       cacheKeyEnum.forgetPassword,
@@ -289,7 +309,7 @@ class auth {
     await this._userModel.findOneAndUpdate({
       filter: { 'email.data': email, confirmed: true },
       update: {
-        password: Globalhash({ plainText: password }),
+        password: Globalhash({ plainText: passwordSchema.password }),
       },
     })
     SuccessResponse({ res, data: 'password updated' })

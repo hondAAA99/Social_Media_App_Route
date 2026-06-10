@@ -28,4 +28,3 @@ export const storySchema = new Schema<IStory>({
 
 StorySchemaHelpersCalling()
 
-storySchema.index({ createdAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 })

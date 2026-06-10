@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import {
   ErrorConflict,
-  ErrorInteralServerError,
+  ErrorInternalServerError,
   ErrorNotFound,
   SuccessResponse,
 } from '../../common/utils/globalresponse.js'
@@ -83,7 +83,7 @@ class postServices {
         await this._s3Service.deleteFiles({
           Keys,
         })
-        ErrorInteralServerError('failed to create post')
+        ErrorInternalServerError('failed to create post')
       }
 
       await this._fireBase.sendNotifications({

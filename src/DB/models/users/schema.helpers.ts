@@ -22,6 +22,15 @@ const UserSchemaHelpersCalling = () => {
     }
   })
 
+  userSchema.pre(['deleteOne', 'deleteMany', 'findOneAndDelete'], function () {
+    const query = this.getQuery()
+    if (query.force == true) {
+      this.setQuery(query)
+    } else {
+      this.setQuery({ ...query, deleteAt: { $exists: false } })
+    }
+  })
+
   // userSchema.pre(
   //   ['deleteMany', 'deleteOne', 'findOneAndDelete'],
   //   async function () {
@@ -75,7 +84,6 @@ const UserSchemaHelpersCalling = () => {
   //   }
   // })
 
-  userSchema.index({ 'story.createdAt': 1 }, { expireAfterSeconds: 0 })
 }
 
 export default UserSchemaHelpersCalling

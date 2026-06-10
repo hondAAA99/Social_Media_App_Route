@@ -5,6 +5,7 @@ import {
   IFriendsData,
   IGenderData,
   IPhoneData,
+  IProfilePicture,
   IUser,
 } from './user.interface.js'
 import { Schema } from 'mongoose'
@@ -23,6 +24,15 @@ const emailSchema = new Schema<IEmailData>({
     type: String,
     enum: Object.values(AvailabilityEnum),
     default: AvailabilityEnum.onlyMe,
+  },
+})
+
+const profilePictureSchema = new Schema<IProfilePicture>({
+  data: { type: String },
+  availability: {
+    type: String,
+    enum: Object.values(AvailabilityEnum),
+    default: AvailabilityEnum.public,
   },
 })
 
@@ -74,13 +84,14 @@ const friendsSchema = new Schema<IFriendsData>({
   },
   data: {
     type: [friendItemSchema],
+    default : []
   },
 })
 
 export const userSchema = new Schema<IUser>(
   {
     blockedUsers: { type: [Schema.Types.ObjectId] },
-    friends: friendsSchema,
+    friends: {type : friendsSchema},
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: {
@@ -90,7 +101,7 @@ export const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: function (this: any): boolean {
+      required: function (): boolean {
         return this.provider === providerEnum.system
       },
     },
@@ -105,13 +116,9 @@ export const userSchema = new Schema<IUser>(
       enum: Object.values(providerEnum),
     },
     profilePicture: {
-      type: String,
-      default: {
-        data: undefined,
-        availability: AvailabilityEnum.public,
-      },
-      required: function (this: any): boolean {
-        return this.provider === providerEnum.system
+      type: profilePictureSchema,
+      required: function (): boolean {
+        return this.provider == providerEnum.system
       },
     },
     phone: {
@@ -120,7 +127,7 @@ export const userSchema = new Schema<IUser>(
         data: '',
         availability: AvailabilityEnum.onlyMe,
       },
-      required: function (this: any): boolean {
+      required: function (): boolean {
         return this.provider === providerEnum.system
       },
     },
@@ -130,7 +137,7 @@ export const userSchema = new Schema<IUser>(
         data: undefined,
         availability: AvailabilityEnum.onlyMe,
       },
-      required: function (this: any): boolean {
+      required: function (): boolean {
         return this.provider === providerEnum.system
       },
     },
